@@ -38,3 +38,6 @@
 *.user
 x64/
 .vs/
+
+#main
+main.cpp
