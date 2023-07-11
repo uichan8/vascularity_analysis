@@ -7,7 +7,7 @@
 using namespace std;
 
 vascularity::vascularity(cv::Mat img, cv::Mat vmask) {
-	fundus = mask;
+	fundus = img;
 	mask = vmask;
 	make_graph();
 }
@@ -109,4 +109,4 @@ void vascularity::skel_iteration(cv::Mat& img, int iter){
 
 void branch_mask_split() {
 
-}
+}s
