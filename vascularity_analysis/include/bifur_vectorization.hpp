@@ -1,29 +1,36 @@
 #ifndef bifur_vectorization_hpp
 #define bifur_vectorization_hpp
-#endif 
 
 #include "opencv2/opencv.hpp"
 #include <vector>
 
 class Circle {
+
+private:
+    int MAX_R;
+    std::vector<std::vector<std::pair<int, int>>> circle_edge_list;
+    std::vector<std::vector<std::vector<int>>> circle_mask_list;
+
 public:
-	Circle(int max_r);
+    Circle(int max_r);
 
-	std::vector<std::vector<int>> circle_edge_list;
-	std::vector<std::vector<std::vector<int>>> circle_mask_list;
+    double angle(double x_center, double y_center, double x, double y);
 
-	static double angle(double x_center, double y_center, double x, double y);
-	bool comparePair(const std::pair<int, int>& p1, const std::pair<int, int>& p2);
+    //bool comparePair(std::pair<int, int>& p1,std::pair<int, int>& p2);
 
-	std::vector<std::pair<int, int>> get_circle(int r);
-	std::vector<std::vector<int>> get_circle_mask(int radius);
+    std::vector<std::pair<int, int>> get_circle(int r);
 
+    std::vector<std::vector<int>> get_circle_mask(int radius);
 
-	const std::vector<std::vector<std::pair<int, int>>>& get_circle_edge_list();
-	const std::vector<std::vector<std::vector<int>>>& get_circle_mask_list();
+    std::vector<std::vector<std::pair<int, int>>>& get_circle_edge_list();
 
-
+    std::vector<std::vector<std::vector<int>>>& get_circle_mask_list();
+    int get_MAX_R();
 };
 
-std::vector<int> get_pixel_values(const cv::Mat& mask, const std::vector<std::pair<int, int>>& coordinates);
-std::vector<std::vector<int>> find_branch_mask(cv::Mat& mask, int x, int y, const Circle& C);
+std::vector<int> get_pixel_values(cv::Mat& mask, std::vector<std::pair<int, int>>& coordinates);
+
+std::vector<std::vector<int>> find_branch_mask(cv::Mat& mask, int x, int y, Circle C);
+
+void draw_line(cv::Mat& mask, cv::Point point1, cv::Point point2, char color = 'r', int thickness = 2);
+#endif 

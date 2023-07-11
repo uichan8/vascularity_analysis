@@ -13,37 +13,19 @@ using namespace cv;
 
 int main() {
     // 검은 창 생성
-    Circle C(19);
+    cv::Mat image(300, 400, CV_8UC3, cv::Scalar(255, 255, 255));
 
-    cv::Mat mask = cv::Mat::zeros(100, 100, CV_32S);
+    // 선을 그리기 위한 시작점과 끝점 좌표
+    cv::Point point1(50, 100);
+    cv::Point point2(350, 200);
 
-    int x = 50;
-    int y = 50;
+    // 선 그리기
+    draw_line(image, point1, point2, 'r', 2);
 
-    std::vector<std::vector<int>> branch_mask = find_branch_mask(mask, x, y, C);
-
-    // branch_mask 출력
-    for (const auto& row : branch_mask) {
-        for (const auto& value : row) {
-            std::cout << value << " ";
-        }
-        std::cout << std::endl;
-    }
-    cv::Mat blackImage = cv::Mat::zeros(cv::Size(640, 480), CV_8UC3);
-
-    // 윈도우 생성 및 이미지 표시
-    cv::namedWindow("Black Image", cv::WINDOW_NORMAL);
-    cv::imshow("Black Image", blackImage);
-
-    // 키 입력 대기
-    //cv::waitKey(0);
-
-    // 윈도우 닫기
-    cv::destroyAllWindows();
-
-
-
-
+    // 이미지 출력
+    cv::imshow("Line Drawing Example", image);
+    cv::waitKey(0);
 
     return 0;
+
 }
