@@ -1,21 +1,36 @@
 #include <vector>
 
-#include "vascularity.hpp"
 #include "opencv2/opencv.hpp"
+#include "vascularity.hpp"
 #include "graph_structure.hpp"
+#include "points.hpp"
 
 using namespace std;
 
 vascularity::vascularity(cv::Mat img, cv::Mat vmask) {
 	fundus = img;
 	mask = vmask;
+
 	make_graph();
 }
 
-void vascularity::make_graph() {
-	// 스켈레토나이즈
-	// 스켈레토나이즈 기빈으로 branch center point 찾기
-	// branch point 기반으로 
+void vascularity::make_graph(){
+	//체널 분리
+	cv::Mat mask_channels[3];
+	cv::split(mask, mask_channels);
+
+	//스켈레톤
+	cv::Mat skel_channels[3];
+	for (int i = 0; i < 3; i++)
+		skeletonize(mask_channels[i], skel_channels[i]);
+
+	//스플릿
+	cv::Mat branch_map[3], bifur_map[3];
+	for (int i = 0; i < 3; i++)
+		branch_mask_split(skel_channels[i], branch_map[i], bifur_map[i]);
+
+	cv::imshow("Result", branch_map[0]);
+	cv::waitKey(0);
 }
 
 void vascularity::skeletonize(const cv::Mat& src, cv::Mat& dst) {
@@ -109,6 +124,8 @@ void vascularity::skel_iteration(cv::Mat& img, int iter){
 	img &= ~marker;
 }
 
-void branch_mask_split() {
-
+void vascularity::branch_mask_split(const cv::Mat& skel_mask, cv::Mat& branch_map, cv::Mat& bifur_map) {
+	points P; 
+	P.find_bifur_points(skel_mask, bifur_map); //코드 효율성에 따라 밖으로 뺄 수 도 있음
+	cv::subtract(skel_mask, bifur_map, branch_map);
 }

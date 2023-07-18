@@ -41,7 +41,7 @@ points::points() {
 	E.insert(E.end(), { E0,E1,E2,E3,E4,E5,E6,E7 });
 }
 
-void points::find_bifur_points(cv::Mat& skel_mask, cv::Mat& result_point_mask){
+void points::find_bifur_points(const cv::Mat& skel_mask, cv::Mat& result_point_mask){
 	cv::Mat output_img = cv::Mat::zeros(skel_mask.size(), skel_mask.type());
 	cv::Mat kerneloutput = cv::Mat::zeros(skel_mask.size(), skel_mask.type());
 
@@ -67,7 +67,7 @@ void points::find_bifur_points(cv::Mat& skel_mask, cv::Mat& result_point_mask){
 	result_point_mask = output_img;
 }
 
-void points::find_end_points(cv::Mat& skel_mask, cv::Mat& result_point_mask) {
+void points::find_end_points(const cv::Mat& skel_mask, cv::Mat& result_point_mask) {
 	cv::Mat output_img = cv::Mat::zeros(skel_mask.size(), skel_mask.type());
 	cv::Mat kerneloutput = cv::Mat::zeros(skel_mask.size(), skel_mask.type());
 

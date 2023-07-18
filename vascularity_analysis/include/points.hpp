@@ -18,8 +18,8 @@ private:
 public:
 	//method
 	points();
-	void find_bifur_points(cv::Mat &skel_mask, cv::Mat& result_point_mask);
-	void find_end_points(cv::Mat& skel_mask, cv::Mat& result_point_mask);
+	void find_bifur_points(const cv::Mat &skel_mask, cv::Mat& result_point_mask);
+	void find_end_points(const cv::Mat& skel_mask, cv::Mat& result_point_mask);
 };
 
 #endif

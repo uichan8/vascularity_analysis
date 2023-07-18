@@ -38,7 +38,7 @@ public:
     void skeletonize(const cv::Mat& src, cv::Mat& dst);
     void skel_iteration(cv::Mat& img, int iter);
 
-    void branch_mask_split();
+    void branch_mask_split(const cv::Mat& skel, cv::Mat& branch_map, cv::Mat& bifur_map);
 
 };
 
