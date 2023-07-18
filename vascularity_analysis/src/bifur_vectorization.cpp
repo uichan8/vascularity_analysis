@@ -33,11 +33,11 @@ double Circle::angle(double x_center, double y_center, double x, double y) {
 	double dy = y - y_center;
 	double radians = atan2(dy, dx);
 	double degrees = radians * 180 / M_PI;
-		
+
 	return degrees;
 }
 
-	
+
 vector<pair<int, int>> Circle::get_circle(int r) {
 	int x = 0;
 	int y = r;
@@ -127,7 +127,7 @@ vector<int> get_pixel_values(cv::Mat& mask, vector<pair<int, int>>& coordinates)
 	return pixel_values;
 }
 
-vector<vector<int>> find_branch_mask(cv::Mat& mask, int x, int y,Circle C) {
+vector<vector<int>> find_branch_mask(cv::Mat& mask, int x, int y, Circle C) {
 
 	int i = 0;
 	vector<vector<pair<int, int>>> circle_edge_list = C.get_circle_edge_list();
@@ -137,7 +137,7 @@ vector<vector<int>> find_branch_mask(cv::Mat& mask, int x, int y,Circle C) {
 		int r = 2 * i + 1;
 		vector<pair<int, int>> coor;
 		for (const auto& coordinate : circle_edge) {
-			int coor_x = coordinate.first + x; 
+			int coor_x = coordinate.first + x;
 			int coor_y = coordinate.second + y;
 			coor.push_back(make_pair(coor_x, coor_y));
 		}
