@@ -20,6 +20,7 @@ tuple<vector<double>, vector<double>, vector<double>, vector<double>>mask_witdth
             diff_y = pts_arr[i].y - pts_arr[i - 1].y;
         }
         else {
+
             x = pts_arr[i].x;
             y = pts_arr[i].y;
             diff_x = pts_arr[i + 1].x - pts_arr[i].x;

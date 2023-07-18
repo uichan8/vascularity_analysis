@@ -13,7 +13,9 @@ vascularity::vascularity(cv::Mat img, cv::Mat vmask) {
 }
 
 void vascularity::make_graph() {
-
+	// 스켈레토나이즈
+	// 스켈레토나이즈 기빈으로 branch center point 찾기
+	// branch point 기반으로 
 }
 
 void vascularity::skeletonize(const cv::Mat& src, cv::Mat& dst) {
@@ -109,4 +111,4 @@ void vascularity::skel_iteration(cv::Mat& img, int iter){
 
 void branch_mask_split() {
 
-}s
+}

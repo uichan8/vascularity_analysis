@@ -80,3 +80,4 @@ void points::find_end_points(cv::Mat& skel_mask, cv::Mat& result_point_mask) {
 	// return result
 	result_point_mask = output_img;
 }
+
