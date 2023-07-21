@@ -30,7 +30,7 @@ public:
 
 std::vector<int> get_pixel_values(cv::Mat& mask, std::vector<std::pair<int, int>>& coordinates);
 
-std::vector<std::vector<int>> find_branch_mask(cv::Mat& mask, int x, int y, Circle C);
+void find_branch_mask(cv::Mat& mask, int x, int y, Circle C, cv::Mat& output);
 
 void draw_line(cv::Mat& mask, cv::Point point1, cv::Point point2, char color = 'r', int thickness = 2);
 #endif 

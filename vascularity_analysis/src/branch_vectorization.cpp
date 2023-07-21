@@ -6,32 +6,45 @@
 #include <cmath>
 #include <tuple>
 #include <stdexcept>
+#include <numeric>
 
 using namespace std;
 
-int count_boundary_point(Mask& target_line_mask, cv::Point2d point) {
-	int num_count = target_line_mask.at(point.y - 1).at(point.x - 1) + target_line_mask.at(point.y - 1).at(point.x) + target_line_mask.at(point.y - 1).at(point.x + 1) +
-		target_line_mask.at(point.y).at(point.x - 1) + target_line_mask.at(point.y).at(point.x + 1) + target_line_mask.at(point.y).at(point.x) +
-		target_line_mask.at(point.y + 1).at(point.x - 1) + target_line_mask.at(point.y + 1).at(point.x) + target_line_mask.at(point.y + 1).at(point.x + 1);
-		return num_count;
+int count_boundary_point(cv::Mat target_line_mask, cv::Point2d point) {
+	int num_count = 0;
+
+	num_count += (target_line_mask.at<uchar>(point.y - 1, point.x - 1) != 0) ? 1 : 0;
+	num_count += (target_line_mask.at<uchar>(point.y - 1, point.x) != 0) ? 1 : 0;
+	num_count += (target_line_mask.at<uchar>(point.y - 1, point.x + 1) != 0) ? 1 : 0;
+	num_count += (target_line_mask.at<uchar>(point.y, point.x - 1) != 0) ? 1 : 0;
+	num_count += (target_line_mask.at<uchar>(point.y, point.x + 1) != 0) ? 1 : 0;
+	num_count += (target_line_mask.at<uchar>(point.y, point.x) != 0) ? 1 : 0;
+	num_count += (target_line_mask.at<uchar>(point.y + 1, point.x - 1) != 0) ? 1 : 0;
+	num_count += (target_line_mask.at<uchar>(point.y + 1, point.x) != 0) ? 1 : 0;
+	num_count += (target_line_mask.at<uchar>(point.y + 1, point.x + 1) != 0) ? 1 : 0;
+
+	return num_count;
 }
-cv::Point2d find_end_point(Mask& target_line_mask) {
+cv::Point2d find_end_point(cv::Mat target_line_mask) {
 	cv::Point2d point = cv::Point2d(-1, -1);
 
-	for (int i = 0; i < target_line_mask.size(); i++) {
-		for (int j = 0; j < target_line_mask[i].size(); j++) {
-			if (target_line_mask[i][j]) {
+	for (int i = 0; i < target_line_mask.rows; i++) {
+		for (int j = 0; j < target_line_mask.cols; j++) {
+			if (target_line_mask.at<uchar>(i, j)) {
 				point = cv::Point2d(j, i);
-				break;
+				//break;
 			}
 		}
-		if (point.x != -1 && point.y != -1)
-			break;
+		//if (point.x != -1 && point.y != -1)
+			//break;
 	}
 
 
 	while (count_boundary_point(target_line_mask, point) != 1) {
-		target_line_mask.at(point.y).at(point.x) = false;
+		target_line_mask.at<uchar>(point.y, point.x) = 0;
+
+		cv::imshow("Result", target_line_mask);
+		cv::waitKey(0);
 
 		vector<cv::Point2d> neighbors = {
 			cv::Point2d(point.x - 1, point.y),
@@ -45,7 +58,7 @@ cv::Point2d find_end_point(Mask& target_line_mask) {
 		};
 
 		for (const auto& neighbor : neighbors) {
-			if (target_line_mask.at(neighbor.y).at(neighbor.x)) {
+			if (target_line_mask.at<uchar>(neighbor.y, neighbor.x)) {
 				point = neighbor;
 			}
 		}
@@ -54,14 +67,13 @@ cv::Point2d find_end_point(Mask& target_line_mask) {
 
 }
 
-tuple<vector<int>, vector<int>> find_track_path(Mask& target_line_mask, cv::Point2d point) {
-	vector<int> new_x;
-	vector<int> new_y;
+vector<cv::Point2d> find_track_path(cv::Mat target_line_mask, cv::Point2d point) {
+	vector<cv::Point2d> path;
 
 	while (count_boundary_point(target_line_mask, point) != 1) {
-		target_line_mask.at(point.y).at(point.x) = false;
-		new_x.push_back(point.x);
-		new_y.push_back(point.y);
+		target_line_mask.at<uchar>(point.y, point.x) = 0;
+		path.push_back(point);
+
 
 		vector<cv::Point2d> neighbors = {
 			cv::Point2d(point.x - 1, point.y),
@@ -75,23 +87,28 @@ tuple<vector<int>, vector<int>> find_track_path(Mask& target_line_mask, cv::Poin
 		};
 
 		for (const auto& neighbor : neighbors) {
-			if (target_line_mask.at(neighbor.y).at(neighbor.x)) {
+			if (target_line_mask.at<uchar>(neighbor.y, neighbor.x)) {
 				point = neighbor;
 			}
 		}
 	}
-	new_x.push_back(point.x);
-	new_y.push_back(point.y);
+	path.push_back(point);
 
-	return make_tuple(new_x, new_y);
+	return path;
 }
 
-tuple<vector<int>, vector<int>> sort_points(const Mask& target_line_mask) {
-	Mask mask_copy = target_line_mask;
-	Mask mask_copy2 = target_line_mask;
+vector<cv::Point2d> sort_points(const cv::Mat& target_line_mask) {
+	cv::Mat mask_copy;
+	cv::Mat mask_copy2;
+	target_line_mask.copyTo(mask_copy);
+	target_line_mask.copyTo(mask_copy2);
+
+	cv::imshow("Result", mask_copy);
+	cv::waitKey(0);
 
 	cv::Point2d end_point = find_end_point(mask_copy);
-	tuple<vector<int>, vector<int>> result = find_track_path(mask_copy2, end_point);
+
+	vector<cv::Point2d> result = find_track_path(mask_copy2, end_point);
 
 	return result;
 }
@@ -174,4 +191,35 @@ vector<vector<double>> differentiate(vector<vector<double>> poly_array) {
 		diff_array.push_back(diff_poly);
 	}
 	return diff_array;
+}
+
+vector<double> simple_sampling(vector<double>& arr, int sparsity) {
+	vector<double> sample_arr;
+	for (int i = 0; i < arr.size(); i++) {
+		if (i % sparsity == 0) {
+			sample_arr.push_back(arr[i]);
+		}
+	}
+	return sample_arr;
+}
+
+void delete_outliers(vector<double>& x_data, vector<double>& y_data, vector<double>& r_data, vector<double>& diff_data, double threshold) {
+	double mean = accumulate(r_data.begin(), r_data.end(), 0.0) / r_data.size();
+	double variance = accumulate(r_data.begin(), r_data.end(), 0.0, [mean](double acc, double x) { return acc + (x - mean) * (x - mean); }) / r_data.size();
+	double std_dev = sqrt(variance);
+
+	vector<double> r_copy = r_data;
+
+	int count = 0;
+
+	for (int i = 0; i < r_copy.size(); i++) {
+		double score = (r_copy[i] - mean) / std_dev;
+		if (abs(score) > threshold) {
+			x_data.erase(x_data.begin() + i - count);
+			y_data.erase(y_data.begin() + i - count);
+			r_data.erase(r_data.begin() + i - count);
+			diff_data.erase(diff_data.begin() + i - count);
+			count++;
+		}
+	}
 }

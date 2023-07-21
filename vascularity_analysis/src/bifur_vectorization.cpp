@@ -127,7 +127,7 @@ vector<int> get_pixel_values(cv::Mat& mask, vector<pair<int, int>>& coordinates)
 	return pixel_values;
 }
 
-vector<vector<int>> find_branch_mask(cv::Mat& mask, int x, int y, Circle C) {
+void find_branch_mask(cv::Mat& mask, int x, int y, Circle C, cv::Mat& output) {
 
 	int i = 0;
 	vector<vector<pair<int, int>>> circle_edge_list = C.get_circle_edge_list();
@@ -156,19 +156,16 @@ vector<vector<int>> find_branch_mask(cv::Mat& mask, int x, int y, Circle C) {
 		}
 		i += 1;
 	}
-	vector<vector<int>> branch_mask;
 	int r = 2 * i + 1;
+	output = cv::Mat(r*2+1, r*2+1, CV_8UC1);
 
 	for (int j = y - r; j <= y + r; j++) {
-		vector<int> row;
 		for (int k = x - r; k <= x + r; k++) {
 			if (j >= 0 && j < mask.rows && k >= 0 && k < mask.cols) {
-				row.push_back(mask.at<uchar>(j, k) * circle_mask_list[i][j - y + r][k - x + r]);
+				output.at<uchar>(j - y + r, k - x + r) = mask.at<uchar>(j, k) * circle_mask_list[i][j - y + r][k - x + r];
 			}
 		}
-		branch_mask.push_back(row);
 	}
-	return branch_mask;
 }
 
 void draw_line(cv::Mat& mask, cv::Point point1, cv::Point point2, char color, int thickness) {

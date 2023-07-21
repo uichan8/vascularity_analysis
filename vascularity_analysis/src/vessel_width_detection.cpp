@@ -34,9 +34,9 @@ tuple<vector<double>, vector<double>, vector<double>, vector<double>>mask_witdth
         }
 
 
-        // if (normal_x == 0 && normal_y == 0) {
-        //     continue;
-        // }
+        if (normal_x == 0 && normal_y == 0) {
+            continue;
+        }
 
         double x1 = x;
         double x2 = x;

@@ -25,7 +25,7 @@ private:
     std::vector<vtree*> a_tree; //동맥 트리 구조                  
     std::vector<vtree*> v_tree; //정맥 트리 구조   
 
-    //기타 자료
+    //기타 자료`    
     cv::Mat node_map;  // gui에서 어떤 대상으로 매핑해줄껀지 가이드 해주는 마스크 
 
 public:
