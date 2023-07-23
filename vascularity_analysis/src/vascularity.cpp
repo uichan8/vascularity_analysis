@@ -6,6 +6,7 @@
 #include "graph_structure.hpp"
 #include "bifur_vectorization.hpp"
 #include "points.hpp"
+#include "skeletonize.hpp"
 
 using namespace std;
 
@@ -16,7 +17,7 @@ vascularity::vascularity(cv::Mat img, cv::Mat vmask) {
 	make_graph();
 }
 
-void vascularity::make_graph(){
+void vascularity::make_graph() {
 	//체널 분리(의찬)
 	cv::Mat mask_channels[3];
 	cv::split(mask, mask_channels);
@@ -26,134 +27,49 @@ void vascularity::make_graph(){
 	for (int i = 0; i < 3; i++)
 		skeletonize(mask_channels[i], skel_channels[i]);
 
-	//스플릿(의찬)
-	cv::Mat branch_map[3], bifur_map[3];
+	//bifur 위치 중심 마스크 계산하기(의찬)
+	cv::Mat bifur_map[3];
+	points P;
 	for (int i = 0; i < 3; i++)
-		branch_mask_split(skel_channels[i], branch_map[i], bifur_map[i]);
+		P.find_bifur_points(skel_channels[i], bifur_map[i]);
 
-	//브랜치 중심 좌표 찾기(의찬)
+	//bifur 중심 좌표 찾기(의찬)
 	std::vector<cv::Point> bifur_coor[3];
 	for (int i = 0; i < 3; i++)
 		where(bifur_map[i], bifur_coor[i]);
 
-	//브랜치 마스크 찾기(의찬)
-	vector<cv::Mat> bifur_mask[3];
+	//bifur 마스크 찾기, 유효 branch 중심 찾기(의찬)
 	Circle C(19);
+	vector<cv::Mat> bifur_mask[3];
+
+	cv::Mat branch_map[3];
 	for (int i = 0; i < 3; i++)
+		branch_map[i] = skel_channels[i].clone();
+	
+	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < bifur_coor[i].size(); ++j) {
 			cv::Mat bifur_mask_seg;
-			find_bifur_mask(mask_channels[i], bifur_coor[i][j].x, bifur_coor[i][j].y, C, bifur_mask_seg);
-			bifur_mask[i].push_back(bifur_mask_seg);
-		}
-
-	//
-	
-	
-
-
-}
-
-void vascularity::skeletonize(const cv::Mat& src, cv::Mat& dst) {
-	dst = src.clone();
-	dst /= 255;         // convert to binary image
-
-	cv::Mat prev = cv::Mat::zeros(dst.size(), CV_8UC1);
-	cv::Mat diff;
-
-	do {
-		skel_iteration(dst, 0);
-		skel_iteration(dst, 1);
-		cv::absdiff(dst, prev, diff);
-		dst.copyTo(prev);
-	} while (cv::countNonZero(diff) > 0);
-
-	dst *= 255;
-}
-
-void vascularity::skel_iteration(cv::Mat& img, int iter){
-	CV_Assert(img.channels() == 1);
-	CV_Assert(img.depth() != sizeof(uchar));
-	CV_Assert(img.rows > 3 && img.cols > 3);
-
-	cv::Mat marker = cv::Mat::zeros(img.size(), CV_8UC1);
-
-	int nRows = img.rows;
-	int nCols = img.cols;
-
-	if (img.isContinuous()) {
-		nCols *= nRows;
-		nRows = 1;
-	}
-
-	int x, y;
-	uchar* pAbove;
-	uchar* pCurr;
-	uchar* pBelow;
-	uchar* nw, * no, * ne;    // north (pAbove)
-	uchar* we, * me, * ea;
-	uchar* sw, * so, * se;    // south (pBelow)
-
-	uchar* pDst;
-
-	// initialize row pointers
-	pAbove = NULL;
-	pCurr = img.ptr<uchar>(0);
-	pBelow = img.ptr<uchar>(1);
-
-	for (y = 1; y < img.rows - 1; ++y) {
-		// shift the rows up by one
-		pAbove = pCurr;
-		pCurr = pBelow;
-		pBelow = img.ptr<uchar>(y + 1);
-
-		pDst = marker.ptr<uchar>(y);
-
-		// initialize col pointers
-		no = &(pAbove[0]);
-		ne = &(pAbove[1]);
-		me = &(pCurr[0]);
-		ea = &(pCurr[1]);
-		so = &(pBelow[0]);
-		se = &(pBelow[1]);
-
-		for (x = 1; x < img.cols - 1; ++x) {
-			// shift col pointers left by one (scan left to right)
-			nw = no;
-			no = ne;
-			ne = &(pAbove[x + 1]);
-			we = me;
-			me = ea;
-			ea = &(pCurr[x + 1]);
-			sw = so;
-			so = se;
-			se = &(pBelow[x + 1]);
-
-			int A = (*no == 0 && *ne == 1) + (*ne == 0 && *ea == 1) +
-				(*ea == 0 && *se == 1) + (*se == 0 && *so == 1) +
-				(*so == 0 && *sw == 1) + (*sw == 0 && *we == 1) +
-				(*we == 0 && *nw == 1) + (*nw == 0 && *no == 1);
-			int B = *no + *ne + *ea + *se + *so + *sw + *we + *nw;
-			int m1 = iter == 0 ? (*no * *ea * *so) : (*no * *ea * *we);
-			int m2 = iter == 0 ? (*ea * *so * *we) : (*no * *so * *we);
-
-			if (A == 1 && (B >= 2 && B <= 6) && m1 == 0 && m2 == 0)
-				pDst[x] = 1;
+			int x = bifur_coor[i][j].x;
+			int y = bifur_coor[i][j].y;
+			find_bifur_mask(mask_channels[i], x, y, C, bifur_mask_seg);
+			int circle_r = bifur_mask_seg.rows / 2;
+			int circle_idx = circle_r / 2;
+			vector<vector<int>> C_mask = C.get_circle_mask_list()[circle_idx];
+			for (int k = 0; k < bifur_mask_seg.rows; k++) {
+				for (int l = 0; l < bifur_mask_seg.rows; l++) {
+					if (C_mask[k][l]) {
+						int target_x = x + l - circle_r, target_y = y + k - circle_r;
+						branch_map[i].at<uchar>(target_y, target_x) = 0;
+					}
+				}
+			}
 		}
 	}
 
-	img &= ~marker;
+	
 }
 
-void vascularity::branch_mask_split(const cv::Mat& skel_mask, cv::Mat& branch_map, cv::Mat& bifur_map) {
-	points P; 
-	P.find_bifur_points(skel_mask, bifur_map); //코드 효율성에 따라 밖으로 뺄 수 도 있음
 
-	cv::Mat dilatedImage;
-	cv::Mat dilateKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
-	cv::dilate(bifur_map, dilatedImage, dilateKernel);
-
-	cv::subtract(skel_mask, dilatedImage, branch_map);
-}
 
 void vascularity::where(const cv::Mat& skel, std::vector<cv::Point> &result) {
 	for (int y = 0; y < skel.rows; ++y) {

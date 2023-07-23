@@ -166,8 +166,6 @@ void find_bifur_mask(cv::Mat& mask, int x, int y, Circle C, cv::Mat& output) {
 			}
 		}
 	}
-	cv::imshow("d", output);
-	cv::waitKey(0);
 }
 
 void draw_line(cv::Mat& mask, cv::Point point1, cv::Point point2, char color, int thickness) {

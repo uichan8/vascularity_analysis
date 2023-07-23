@@ -30,23 +30,16 @@ void skeletonize(const cv::Mat& mask, cv::Mat& skel) {
 	}
 	skel = zero_c_pad;
 
-
-	// cv::Mat zero_c_pad = cv::Mat::zeros(rows + 2, cols + 2, CV_8SC1);
-	// std::vector<cv::Mat> split_c = { zero_c_pad , skel, zero_c_pad };
-	// cv::merge(split_c, skel);
-
-	//preprocess normalize
-	//skel.setTo(1, skel != 0);
-
 	//thinning
 	compute_thin_image(skel);
 
-
 	//복원
-	//크롭하고 차원 복원해야됨
-
+	cv::Mat temp[3];
+	cv::split(skel, temp);
+	cv::Rect cropRegion(1, 1, cols, rows);
+	skel = temp[1](cropRegion);
+	skel.convertTo(skel, CV_8UC1);
 	skel *= 255;
-	cv::imwrite("skel_result001.bmp", skel);
 }
 
 void compute_thin_image(cv::Mat& img) {
@@ -89,7 +82,6 @@ void compute_thin_image(cv::Mat& img) {
 			}
 		}
 	}
-	//return img;
 }
 
 void find_simple_point_candidates(cv::Mat& img, int curr_border, vector<cv::Point3d>& simple_border_points, vector<int>& LUT) {
