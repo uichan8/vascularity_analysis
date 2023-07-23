@@ -39,7 +39,7 @@ public:
 
     void skel_iteration(cv::Mat& img, int iter);
 
-    void branch_mask_split(const cv::Mat& skel, cv::Mat& branch_map, cv::Mat& bifur_map);
+    void branch_mask_split(const cv::Mat& skel, cv::Mat& branch_map, cv::Mat& bifur_map); //함수이름 바꿔야함 브랜치 바이퍼 스플릿으로
 
     void where(const cv::Mat& skel, std::vector<cv::Point> &result);
 };

@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <algorithm>
 #include <vector>
 
@@ -7,7 +7,7 @@
 
 using namespace std;
 
-/*����ü �κ�*/
+/*±¸Á¶Ã¼ ºÎºÐ*/
 
 //-----------------------------------------------------------------------
 //--------------------------   vnode   ----------------------------------
@@ -46,23 +46,23 @@ void vnode::disconnect(vnode* target) {
 
 /*getter, setter*/
 vector<int*>& vbranch::get_branch_segments() {
-    return branch_segments;
+	return branch_segments;
 }
 
 void vbranch::set_branch_segments(const vector<int*>& segments) {
-    branch_segments = segments;
+	branch_segments = segments;
 }
 
 vector<int*>& vbranch::get_branch_r() {
-    return branch_r;
+	return branch_r;
 }
 
 void vbranch::set_branch_r(const vector<int*>& rValues) {
-    branch_r = rValues;
+	branch_r = rValues;
 }
 
 /*method*/
-void vbranch::add_segment_data(int* segment, int* r){
+void vbranch::add_segment_data(int* segment, int* r) {
 	branch_segments.push_back(segment);
 	branch_r.push_back(r);
 }

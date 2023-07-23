@@ -4,6 +4,7 @@
 #include "opencv2/opencv.hpp"
 #include "vascularity.hpp"
 #include "graph_structure.hpp"
+#include "bifur_vectorization.hpp"
 #include "points.hpp"
 
 using namespace std;
@@ -30,11 +31,25 @@ void vascularity::make_graph(){
 	for (int i = 0; i < 3; i++)
 		branch_mask_split(skel_channels[i], branch_map[i], bifur_map[i]);
 
-	//브랜치 마스크 찾기(의찬)
+	//브랜치 중심 좌표 찾기(의찬)
 	std::vector<cv::Point> bifur_coor[3];
 	for (int i = 0; i < 3; i++)
 		where(bifur_map[i], bifur_coor[i]);
+
+	//브랜치 마스크 찾기(의찬)
+	vector<cv::Mat> bifur_mask[3];
+	Circle C(19);
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < bifur_coor[i].size(); ++j) {
+			cv::Mat bifur_mask_seg;
+			find_bifur_mask(mask_channels[i], bifur_coor[i][j].x, bifur_coor[i][j].y, C, bifur_mask_seg);
+			bifur_mask[i].push_back(bifur_mask_seg);
+		}
+
+	//
 	
+	
+
 
 }
 
@@ -132,7 +147,12 @@ void vascularity::skel_iteration(cv::Mat& img, int iter){
 void vascularity::branch_mask_split(const cv::Mat& skel_mask, cv::Mat& branch_map, cv::Mat& bifur_map) {
 	points P; 
 	P.find_bifur_points(skel_mask, bifur_map); //코드 효율성에 따라 밖으로 뺄 수 도 있음
-	cv::subtract(skel_mask, bifur_map, branch_map);
+
+	cv::Mat dilatedImage;
+	cv::Mat dilateKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+	cv::dilate(bifur_map, dilatedImage, dilateKernel);
+
+	cv::subtract(skel_mask, dilatedImage, branch_map);
 }
 
 void vascularity::where(const cv::Mat& skel, std::vector<cv::Point> &result) {

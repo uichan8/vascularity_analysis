@@ -4,12 +4,13 @@
 #include <string>
 
 #include "vascularity.hpp"
+#include "skeletonize.hpp"
 
 using namespace std;
 using namespace cv;
 
 
-int main() {
+int main2() {
     // 경로 긁어오기
     string mask_path = "C:/Users/uicha/Desktop/vascularity_analysis_cpp/data/mask/000_mask.png";
     string img_path = "C:/Users/uicha/Desktop/vascularity_analysis_cpp/data/img/000_img.png";
@@ -23,4 +24,14 @@ int main() {
 
 
     return 0;
+}
+
+int main(void) {
+    string mask_path = "C:/Users/uicha/Desktop/vascularity_analysis_cpp/data/mask/001_mask.png";
+    Mat mask = imread(mask_path);
+    Mat mask_c[3];
+    split(mask, mask_c);
+
+    Mat skel;
+    skeletonize(mask_c[0], skel);
 }

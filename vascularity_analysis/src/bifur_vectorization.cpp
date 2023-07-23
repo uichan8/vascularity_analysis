@@ -12,10 +12,8 @@
 
 using namespace std;
 
-//---------------------------------------------------------------------------
-// -----------------------------  Circle class  -----------------------------
-//---------------------------------------------------------------------------
-Circle::Circle(int max_r) {
+
+Circle::Circle(int max_r = 19) {
 	MAX_R = max_r;
 	for (int i = 0; i <= MAX_R; i++) {
 		if (i % 2 == 1) {
@@ -24,6 +22,11 @@ Circle::Circle(int max_r) {
 		}
 	}
 }
+/*
+bool Circle::comparePair(pair<int, int>& p1, pair<int, int>& p2) {
+	return angle(0, 0, p1.first, p1.second) < angle(0, 0, p2.first, p2.second);
+}
+*/
 
 double Circle::angle(double x_center, double y_center, double x, double y) {
 	double dx = x - x_center;
@@ -33,6 +36,7 @@ double Circle::angle(double x_center, double y_center, double x, double y) {
 
 	return degrees;
 }
+
 
 vector<pair<int, int>> Circle::get_circle(int r) {
 	int x = 0;
@@ -94,18 +98,12 @@ vector<vector<int>> Circle::get_circle_mask(int radius) {
 vector<vector<pair<int, int>>>& Circle::get_circle_edge_list() {
 	return circle_edge_list;
 }
-
 vector<vector<vector<int>>>& Circle::get_circle_mask_list() {
 	return circle_mask_list;
 }
-
 int Circle::get_MAX_R() {
 	return MAX_R;
 }
-
-//---------------------------------------------------------------------------
-// --------------------------------------------------------------------------
-//---------------------------------------------------------------------------
 
 vector<int> get_pixel_values(cv::Mat& mask, vector<pair<int, int>>& coordinates) {
 	vector<int> pixel_values;
@@ -129,8 +127,8 @@ vector<int> get_pixel_values(cv::Mat& mask, vector<pair<int, int>>& coordinates)
 	return pixel_values;
 }
 
-vector<vector<int>> find_branch_mask(cv::Mat& mask, int x, int y, Circle C) {
-
+void find_bifur_mask(cv::Mat& mask, int x, int y, Circle C, cv::Mat& output) {
+	//bifur가 branch로 잘못 되어있는게 있음
 	int i = 0;
 	vector<vector<pair<int, int>>> circle_edge_list = C.get_circle_edge_list();
 	vector<vector<vector<int>>> circle_mask_list = C.get_circle_mask_list();
@@ -158,19 +156,18 @@ vector<vector<int>> find_branch_mask(cv::Mat& mask, int x, int y, Circle C) {
 		}
 		i += 1;
 	}
-	vector<vector<int>> branch_mask;
 	int r = 2 * i + 1;
+	output = cv::Mat(r*2+1, r*2+1, CV_8UC1);
 
 	for (int j = y - r; j <= y + r; j++) {
-		vector<int> row;
 		for (int k = x - r; k <= x + r; k++) {
 			if (j >= 0 && j < mask.rows && k >= 0 && k < mask.cols) {
-				row.push_back(mask.at<uchar>(j, k) * circle_mask_list[i][j - y + r][k - x + r]);
+				output.at<uchar>(j - y + r, k - x + r) = mask.at<uchar>(j, k) * circle_mask_list[i][j - y + r][k - x + r];
 			}
 		}
-		branch_mask.push_back(row);
 	}
-	return branch_mask;
+	cv::imshow("d", output);
+	cv::waitKey(0);
 }
 
 void draw_line(cv::Mat& mask, cv::Point point1, cv::Point point2, char color, int thickness) {
