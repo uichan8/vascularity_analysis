@@ -1,4 +1,5 @@
 #include <vector>
+#include <iostream>
 
 #include "opencv2/opencv.hpp"
 #include "vascularity.hpp"
@@ -29,12 +30,12 @@ void vascularity::make_graph(){
 	cv::Mat mask_channels[3];
 	cv::split(mask, mask_channels);
 
-	//스켈레톤
+	//스켈레톤(의찬)
 	cv::Mat skel_channels[3];
 	for (int i = 0; i < 3; i++)
 		skeletonize(mask_channels[i], skel_channels[i]);
 
-	//스플릿
+	//스플릿(의찬)
 	cv::Mat branch_map[3], bifur_map[3];
 	for (int i = 0; i < 3; i++)
 		branch_mask_split(skel_channels[i], branch_map[i], bifur_map[i]);
@@ -246,10 +247,15 @@ void vascularity::skel_iteration(cv::Mat& img, int iter){
 void vascularity::branch_mask_split(const cv::Mat& skel_mask, cv::Mat& branch_map, cv::Mat& bifur_map) {
 	points P;
 	P.find_bifur_points(skel_mask, bifur_map); //코드 효율성에 따라 밖으로 뺄 수 도 있음
+	cv::subtract(skel_mask, bifur_map, branch_map);
+}
 
-	cv::Mat dilatedImage;
-	cv::Mat dilateKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
-	cv::dilate(bifur_map, dilatedImage, dilateKernel);
-
-	cv::subtract(skel_mask, dilatedImage, branch_map);
+void vascularity::where(const cv::Mat& skel, std::vector<cv::Point> &result) {
+	for (int y = 0; y < skel.rows; ++y) {
+		for (int x = 0; x < skel.cols; ++x) {
+			if (skel.at<uchar>(y, x) > 0) {
+				result.emplace_back(x, y); //작동이 이상할 경우 push back으로 바꿔볼것
+			}
+		}
+	}
 }
