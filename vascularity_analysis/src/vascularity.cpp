@@ -52,6 +52,30 @@ void vascularity::make_graph(){
 	//bifur 마스크 찾기, 유효 branch 중심 찾기(의찬)
 	Circle C(19);
 	vector<cv::Mat> bifur_mask[3];
+	cv::Mat branch_map[3];
+	for (int i = 0; i < 3; i++)
+		branch_map[i] = skel_channels[i].clone();
+
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < bifur_coor[i].size(); ++j) {
+			cv::Mat bifur_mask_seg;
+			int x = bifur_coor[i][j].x;
+			int y = bifur_coor[i][j].y;
+			find_bifur_mask(mask_channels[i], x, y, C, bifur_mask_seg);
+			int circle_r = bifur_mask_seg.rows / 2;
+			int circle_idx = circle_r / 2;
+			vector<vector<int>> C_mask = C.get_circle_mask_list()[circle_idx];
+			for (int k = 0; k < bifur_mask_seg.rows; k++) {
+				for (int l = 0; l < bifur_mask_seg.rows; l++) {
+					if (C_mask[k][l]) {
+						int target_x = x + l - circle_r, target_y = y + k - circle_r;
+						branch_map[i].at<uchar>(target_y, target_x) = 0;
+					}
+				}
+			}
+		}
+	}
+
 	//vertex 분리 (종수)
 	cv::Mat labels_r, stats_r, cent_r, labels_b, stats_b, cent_b;
 	int retvals_r = cv::connectedComponentsWithStats(branch_map[2], labels_r, stats_r, cent_r);
@@ -157,30 +181,6 @@ void vascularity::make_graph(){
 				sub_edge.push_back(cv::Point2d(x_cen[i] + r[i] * cos(angle[i]), y_cen[i] + r[i] * sin(angle[i])));
 				sub_edge.push_back(cv::Point2d(x_cen[i] + r[i] * cos(angle[i] + M_PI), y_cen[i] + r[i] * sin(angle[i]) + M_PI));
 				center.push_back(cv::Point2d(x_cen[i], y_cen[i]));
-			}
-		}
-	}
-
-	cv::Mat branch_map[3];
-	for (int i = 0; i < 3; i++)
-		branch_map[i] = skel_channels[i].clone();
-	
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < bifur_coor[i].size(); ++j) {
-			cv::Mat bifur_mask_seg;
-			int x = bifur_coor[i][j].x;
-			int y = bifur_coor[i][j].y;
-			find_bifur_mask(mask_channels[i], x, y, C, bifur_mask_seg);
-			int circle_r = bifur_mask_seg.rows / 2;
-			int circle_idx = circle_r / 2;
-			vector<vector<int>> C_mask = C.get_circle_mask_list()[circle_idx];
-			for (int k = 0; k < bifur_mask_seg.rows; k++) {
-				for (int l = 0; l < bifur_mask_seg.rows; l++) {
-					if (C_mask[k][l]) {
-						int target_x = x + l - circle_r, target_y = y + k - circle_r;
-						branch_map[i].at<uchar>(target_y, target_x) = 0;
-					}
-				}
 			}
 		}
 	}
