@@ -157,7 +157,7 @@ vector<cv::Point2d> get_edge(cv::Mat& img, cv::Point2d center_coordinate, double
         sample[i] = edge_start_point + edge_width / (sampling_num - 1) * i;
 
     double x1[sampling_num], y1[sampling_num], x2[sampling_num], y2[sampling_num];
-    double angle = atan(center_tan) + M_PI / 2;
+    double angle = atan(center_tan);
     for (int i = 0; i < sampling_num; i++) {
         x1[i] = center_coordinate.x + (sample[i] * cos(angle));
         y1[i] = center_coordinate.y + (sample[i] * sin(angle));
@@ -189,6 +189,7 @@ vector<cv::Point2d> get_edge(cv::Mat& img, cv::Point2d center_coordinate, double
     //원래 좌표로 환산
     double edge1 = edge_start_point + l1 / (sampling_num - 1) * edge_width;
     double edge2 = edge_start_point + l2 / (sampling_num - 1) * edge_width;
+
     cv::Point2d coor1(center_coordinate.x + edge1 * cos(angle), center_coordinate.y + edge1 * sin(angle));
     cv::Point2d coor2(center_coordinate.x - edge2 * cos(angle), center_coordinate.y - edge2 * sin(angle));
 
