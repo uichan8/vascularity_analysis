@@ -34,12 +34,6 @@ public:
 
     //그래프 구척 관련 메소드
     void make_graph();
-    
-    void skeletonize(const cv::Mat& src, cv::Mat& dst);
-
-    void skel_iteration(cv::Mat& img, int iter);
-
-    void branch_mask_split(const cv::Mat& skel, cv::Mat& branch_map, cv::Mat& bifur_map);
 
     void where(const cv::Mat& skel, std::vector<cv::Point> &result);
 };
