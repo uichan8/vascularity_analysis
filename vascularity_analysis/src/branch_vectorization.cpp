@@ -43,9 +43,6 @@ cv::Point2d find_end_point(cv::Mat target_line_mask) {
 	while (count_boundary_point(target_line_mask, point) != 1) {
 		target_line_mask.at<uchar>(point.y, point.x) = 0;
 
-		cv::imshow("Result", target_line_mask);
-		cv::waitKey(0);
-
 		vector<cv::Point2d> neighbors = {
 			cv::Point2d(point.x - 1, point.y),
 			cv::Point2d(point.x + 1, point.y),
@@ -103,8 +100,6 @@ vector<cv::Point2d> sort_points(const cv::Mat& target_line_mask) {
 	target_line_mask.copyTo(mask_copy);
 	target_line_mask.copyTo(mask_copy2);
 
-	cv::imshow("Result", mask_copy);
-	cv::waitKey(0);
 
 	cv::Point2d end_point = find_end_point(mask_copy);
 
@@ -215,10 +210,10 @@ void delete_outliers(vector<double>& x_data, vector<double>& y_data, vector<doub
 	for (int i = 0; i < r_copy.size(); i++) {
 		double score = (r_copy[i] - mean) / std_dev;
 		if (abs(score) > threshold) {
-			x_data.erase(x_data.begin() + i - count);
-			y_data.erase(y_data.begin() + i - count);
-			r_data.erase(r_data.begin() + i - count);
-			diff_data.erase(diff_data.begin() + i - count);
+			x_data.erase(x_data.begin() + (i - count));
+			y_data.erase(y_data.begin() + (i - count));
+			r_data.erase(r_data.begin() + (i - count));
+			diff_data.erase(diff_data.begin() + (i - count));
 			count++;
 		}
 	}

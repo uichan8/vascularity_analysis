@@ -43,14 +43,14 @@ tuple<vector<double>, vector<double>, vector<double>, vector<double>>mask_witdth
         double y1 = y;
         double y2 = y;
 
-        while (x1 < seg_mask.rows && y1 < seg_mask.cols) {
+        while (x1 < seg_mask.cols && y1 < seg_mask.rows) {
             double x_prime = x1 + normal_x;
             double x_pprime = x2 - normal_x;
             double y_prime = y1 + normal_y;
             double y_pprime = y2 - normal_y;
 
 
-            if (static_cast<int>(seg_mask.at<uchar>(static_cast<int>(x_prime), static_cast<int>(y_prime))) == 0 && static_cast<int>(seg_mask.at<uchar>(static_cast<int>(x_pprime), static_cast<int>(y_pprime))) == 0) {
+            if (static_cast<int>(seg_mask.at<uchar>(static_cast<int>(y_prime), static_cast<int>(x_prime))) == 0 && static_cast<int>(seg_mask.at<uchar>(static_cast<int>(y_pprime), static_cast<int>(x_pprime))) == 0) {
                 x1_edge.push_back(x_prime - 0.5);
                 x2_edge.push_back(x_pprime + 0.5);
                 y1_edge.push_back(y_prime - 0.5);
@@ -58,11 +58,11 @@ tuple<vector<double>, vector<double>, vector<double>, vector<double>>mask_witdth
                 break;
             }
 
-            if (static_cast<int>(seg_mask.at<uchar>(static_cast<int>(x_prime), static_cast<int>(y_prime))) == 0) {
+            if (static_cast<int>(seg_mask.at<uchar>(static_cast<int>(y_prime), static_cast<int>(x_prime))) == 0) {
                 x_prime = x1;
                 y_prime = y1;
             }
-            if (static_cast<int>(seg_mask.at<uchar>(static_cast<int>(x_pprime), static_cast<int>(y_pprime))) == 0) {
+            if (static_cast<int>(seg_mask.at<uchar>(static_cast<int>(y_pprime), static_cast<int>(x_pprime))) == 0) {
                 x_pprime = x2;
                 y_pprime = y2;
             }
@@ -100,7 +100,7 @@ double calculate_pixel(cv::Mat& img, cv::Point2d coor) {
     int max_x = min_x + 1;
     int max_y = min_y + 1;
 
-    if (min_x < 0 || min_x >= img.cols - 1 || min_y < 0 || min_y >= img.rows - 1)
+    if (min_x < 0 || max_x >= img.cols - 1 || min_y < 0 || max_y >= img.rows - 1)
         throw out_of_range("The given point is out of image range.");
 
 
@@ -109,10 +109,10 @@ double calculate_pixel(cv::Mat& img, cv::Point2d coor) {
     double p = coor.x - min_x;
     double q = 1 - p;
 
-    uchar A = img.at<uchar>(min_x, min_y);
-    uchar B = img.at<uchar>(min_x, max_y);
-    uchar C = img.at<uchar>(max_x, min_y);
-    uchar D = img.at<uchar>(max_x, max_y);
+    uchar A = img.at<uchar>(min_y, min_x);
+    uchar B = img.at<uchar>(max_y, min_x);
+    uchar C = img.at<uchar>(min_y, max_x);
+    uchar D = img.at<uchar>(max_y, max_x);
 
     double pixel_val = q * (b * A + a * B) + p * (b * D + a * C);
 
@@ -147,7 +147,7 @@ vector<cv::Point2d> get_edge(cv::Mat& img, cv::Point2d center_coordinate, double
         tuple or ndarray: The coordinates of the endpoints of the branch segment or the edge profile, depending on the value of the "profile" argument.
     */
     const double edge_width = 3;
-    const int sampling_num = 40;
+    const int sampling_num = 10;
     const int P = 2; //power_factor
 
     //1. edge_profile 가져오기
@@ -184,7 +184,7 @@ vector<cv::Point2d> get_edge(cv::Mat& img, cv::Point2d center_coordinate, double
         l1 += w1 + half_block_w;
         l2 += w2 + half_block_w;
     }
-    l1 /= w1_s;   l2 /= w2_s;
+    l1 /= w1_s + 1e-7;   l2 /= w2_s + 1e-7;
 
     //원래 좌표로 환산
     double edge1 = edge_start_point + l1 / (sampling_num - 1) * edge_width;

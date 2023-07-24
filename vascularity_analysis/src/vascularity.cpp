@@ -88,11 +88,11 @@ void vascularity::make_graph(){
 	};
     
 	vector<cv::Point2d> center, sub_edge;
-	vector<double> r;
+	vector<cv::Point2d> sub;
 
 	// branch_vectorization(종수)
 	for (auto& vessel : vessel_informs) {
-		sub_edge.clear();
+		//sub_edge.clear();
 		
 		int retvals = get<0>(vessel);
 		cv::Mat labels = get<1>(vessel);
@@ -103,6 +103,9 @@ void vascularity::make_graph(){
 			cv::Mat target_line = (labels == i);
 			vector<cv::Point2d> sorted_points = sort_points(target_line);
 
+			if (sorted_points.size() < 6)
+				continue;
+
 			//마스크 맵 기반 혈관 굵기 추정
 			tuple<vector<double>, vector<double>, vector<double>, vector<double>> edge = mask_witdth_detection(bmask, sorted_points);
 
@@ -110,6 +113,8 @@ void vascularity::make_graph(){
 			vector<double> edge_x2 = get<1>(edge);
 			vector<double> edge_y = get<2>(edge);
 			vector<double> edge_y2 = get<3>(edge);
+
+
 
 			if (get<0>(edge).size() > 4) {
 				draw_line(branch_mask, cv::Point2d(edge_y[1], edge_x[1]), cv::Point2d(edge_y2[1], edge_x2[1]), color);
@@ -126,6 +131,7 @@ void vascularity::make_graph(){
 			vector<double> y_cen(edge_x.size());
 			vector<double> center_tan(edge_x.size());
 			vector<double> vessel_w(edge_x.size());
+			vector<double> r;
 
 			for (size_t i = 0; i < edge_x.size(); i++) {
 				x_cen[i] = (edge_x[i] + edge_x2[i]) / 2.0;
@@ -137,6 +143,10 @@ void vascularity::make_graph(){
 			for (size_t i = 0; i < x_cen.size(); i++) {
 				vector<cv::Point2d> edge_coor;
 				edge_coor = get_edge(blur_fundus, cv::Point2d(x_cen[i], y_cen[i]), center_tan[i], vessel_w[i]);
+
+				sub.push_back(edge_coor[0]);
+				sub.push_back(edge_coor[1]);
+
 				x_cen[i] = (edge_coor[0].x + edge_coor[1].x) / 2;
 				y_cen[i] = (edge_coor[0].y + edge_coor[1].y) / 2;
 				//center.push_back(cv::Point2d((edge_coor[0].x + edge_coor[1].x) / 2, (edge_coor[0].y + edge_coor[1].y) / 2));
@@ -171,7 +181,7 @@ void vascularity::make_graph(){
 			
 			r = get_lines(spline_r.second, sampling_num);
 
-			delete_outliers(x_cen, y_cen, r, spline_diff, 2);
+			//delete_outliers(x_cen, y_cen, r, spline_diff, 2);
 
 			for (const auto& diff : spline_diff) {
 				angle.push_back(atan(diff) + M_PI / 2);
@@ -185,7 +195,17 @@ void vascularity::make_graph(){
 		}
 	}
 
-	
+	for (const cv::Point2d& point : sub) {
+		// 좌표값에 해당하는 원 그리기
+		cv::circle(fundus, cv::Point(point.x, point.y), 1, cv::Scalar(0, 0, 255), -1);
+	}
+
+	for (const cv::Point2d& point : center) {
+		// 좌표값에 해당하는 원 그리기
+		cv::circle(fundus, cv::Point(point.x, point.y), 1, cv::Scalar(255, 255, 255), -1);
+	}
+	cv::imshow("fundus", fundus);
+	cv::waitKey(0);
 }
 
 

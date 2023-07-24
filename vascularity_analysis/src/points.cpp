@@ -28,7 +28,8 @@ points::points() {
 	cv::Mat Y5 = (cv::Mat_<int>(3, 3) << 1, 0, -1, 0, 1, 1, -1, 1, -1);
 	cv::Mat Y6 = (cv::Mat_<int>(3, 3) << 0, -1, 1, 1, 1, -1, 0, -1, 1);
 	cv::Mat Y7 = (cv::Mat_<int>(3, 3) << -1, 1, -1, 0, 1, 1, 1, 0, -1);
-	Y.insert(Y.end(), { Y0,Y1,Y2,Y3,Y4,Y5,Y6,Y7 });
+	cv::Mat Y8 = (cv::Mat_<int>(3, 3) << 1, -1, 0, -1, 1, 1, 1, -1, 0);
+	Y.insert(Y.end(), { Y0,Y1,Y2,Y3,Y4,Y5,Y6,Y7,Y8 });
 
 	cv::Mat E0 = (cv::Mat_<int>(3, 3) << -1, -1, -1, -1, 1, -1, 0, 1, 0);
 	cv::Mat E1 = (cv::Mat_<int>(3, 3) << -1, -1, -1, -1, 1, 0, -1, 0, 1);
