@@ -190,7 +190,7 @@ void draw_line(cv::Mat& mask, cv::Point point1, cv::Point point2, char color, in
 				int y = static_cast<int>(round(y_values[j])) + i;
 				int x = static_cast<int>(round(x_values[j]));
 				if (y >= 0 && y < height && x >= 0 && x < width) {
-					mask.at<cv::Vec3b>(y, x)[0] = 0;
+					mask.at<cv::Vec3b>(y, x)[2] = 0;
 				}
 			}
 		}
@@ -201,7 +201,7 @@ void draw_line(cv::Mat& mask, cv::Point point1, cv::Point point2, char color, in
 				int y = static_cast<int>(round(y_values[j]));
 				int x = static_cast<int>(round(x_values[j])) + i;
 				if (y >= 0 && y < height && x >= 0 && x < width) {
-					mask.at<cv::Vec3b>(y, x)[2] = 0;
+					mask.at<cv::Vec3b>(y, x)[0] = 0;
 				}
 			}
 		}
