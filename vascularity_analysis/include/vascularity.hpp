@@ -19,8 +19,8 @@ private:
     int optic_disk_r; // optic disk 반지름
 
     //vector 구조
-    std::vector<vgraph*> a_graph; //동맥 그래프 구조                  
-    std::vector<vgraph*> v_graph; //정맥 그래프 구조
+    std::vector<vgraph*> a_graph; //동맥 그래프 구조 r            
+    std::vector<vgraph*> v_graph; //정맥 그래프 구조 b
 
     std::vector<vtree*> a_tree; //동맥 트리 구조                  
     std::vector<vtree*> v_tree; //정맥 트리 구조   

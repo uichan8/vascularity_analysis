@@ -28,6 +28,7 @@ class vbranch : public vnode {
 private:
 	std::vector<int*> branch_segments;
 	std::vector<int*> branch_r;
+	cv::Point end_points[2]; //그래프에서 바이퍼랑 연결 할 때 필요한 코드
 
 public:
 	//getter
@@ -62,17 +63,20 @@ public:
 //-----------------------------------------------------------------------
 class vgraph {
 private:
-	std::vector <vbranch> vbranchs;
-	std::vector <vbifur> vbifur;
+	std::vector <vbranch> vbranches;
+	std::vector <vbifur> vbifurs;
+public:
+	void add_bifur(vbifur new_bifur);
+	void add_branch(vbranch new_branch);
+	void connect();
 };
 
 // 나중에 그래프 완성 후 수정 작업
 class vtree {
 private:
 	vnode* root;
-	std::vector <vbranch> vbranchs;
-	std::vector <vbifur> vbifur;
-
+	std::vector <vbranch> vbranches;
+	std::vector <vbifur> vbifurs;
 public:
 };
 

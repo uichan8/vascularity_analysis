@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <cmath>
 #include <vector>
+#include <iostream>
 #define M_PI 3.14159265358979323846
 
 using namespace std;
@@ -84,6 +85,7 @@ tuple<vector<double>, vector<double>, vector<double>, vector<double>>mask_witdth
 
  @return The pixel value at the given coordinate.
  */
+
 double calculate_pixel(cv::Mat& img, cv::Point2d coor) {
     /**
     Calculates the pixel value at a given coordinate of an image.
@@ -147,7 +149,7 @@ vector<cv::Point2d> get_edge(cv::Mat& img, cv::Point2d center_coordinate, double
         tuple or ndarray: The coordinates of the endpoints of the branch segment or the edge profile, depending on the value of the "profile" argument.
     */
     const double edge_width = 3;
-    const int sampling_num = 10;
+    const int sampling_num = 50;
     const int P = 2; //power_factor
 
     //1. edge_profile 가져오기
@@ -173,18 +175,17 @@ vector<cv::Point2d> get_edge(cv::Mat& img, cv::Point2d center_coordinate, double
     }
 
     //2. gradient 및 weight계산
-    double w1, w2, w1_s = 0, w2_s = 0;
-    double l1 = 0, l2 = 0;
-    double half_block_w = edge_width / sampling_num * 0.5;
+    long double w1, w2, w1_s = 0, w2_s = 0;
+    long double l1 = 0, l2 = 0;
     //3. 질량 중심 구하기
     for (int i = 0; i < sampling_num - 1; i++) {
         w1 = pow((edge_profile_1[i + 1] - edge_profile_1[i]), P);
         w2 = pow((edge_profile_2[i + 1] - edge_profile_2[i]), P);
         w1_s += w1;    w2_s += w2;
-        l1 += w1 + half_block_w;
-        l2 += w2 + half_block_w;
+        l1 += (i + 0.5) * edge_width / sampling_num  * w1;
+        l2 += (i + 0.5) * edge_width / sampling_num  * w2;
     }
-    l1 /= w1_s + 1e-7;   l2 /= w2_s + 1e-7;
+    l1 /=w1_s;   l2 /= w2_s;
 
     //원래 좌표로 환산
     double edge1 = edge_start_point + l1 / (sampling_num - 1) * edge_width;
@@ -192,6 +193,7 @@ vector<cv::Point2d> get_edge(cv::Mat& img, cv::Point2d center_coordinate, double
 
     cv::Point2d coor1(center_coordinate.x + edge1 * cos(angle), center_coordinate.y + edge1 * sin(angle));
     cv::Point2d coor2(center_coordinate.x - edge2 * cos(angle), center_coordinate.y - edge2 * sin(angle));
+
 
     vector<cv::Point2d> edge_coor = { coor1, coor2 };
     return edge_coor;

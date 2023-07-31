@@ -7,7 +7,7 @@
 
 using namespace std;
 
-/*±¸Á¶Ã¼ ºÎºÐ*/
+/*구조체*/
 
 //-----------------------------------------------------------------------
 //--------------------------   vnode   ----------------------------------
@@ -86,4 +86,22 @@ void vbifur::set_center_coor(cv::Point& center) {
 
 void vbifur::set_vbifur_mask(cv::Mat& mask) {
 	vbifur_mask = mask;
+}
+
+//-----------------------------------------------------------------------
+//-------------------------     graph     -------------------------------
+//-----------------------------------------------------------------------
+
+void vgraph::add_bifur(vbifur new_bifur) {
+	vbifurs.push_back(new_bifur);
+}
+
+void vgraph::add_branch(vbranch new_branch) {
+	vbranches.push_back(new_branch);
+}
+
+void vgraph::connect() {
+	//1. bifur을 이미지를 나타내는데, 1번 bifur에 해당하는 마스크는 픽셀값을 1로 둔다.
+	//2. 다이레이트를 한다.
+	//3. branch의 end point의 픽셀값이랑 연결해준다.
 }
