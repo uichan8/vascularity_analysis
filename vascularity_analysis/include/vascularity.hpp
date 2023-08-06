@@ -19,8 +19,8 @@ private:
     int optic_disk_r; // optic disk 반지름
 
     //vector 구조
-    std::vector<vgraph*> a_graph; //동맥 그래프 구조 r            
-    std::vector<vgraph*> v_graph; //정맥 그래프 구조 b
+    vgraph a_graph; //동맥 그래프 구조 r            
+    vgraph v_graph; //정맥 그래프 구조 b
 
     std::vector<vtree*> a_tree; //동맥 트리 구조                  
     std::vector<vtree*> v_tree; //정맥 트리 구조   
@@ -32,9 +32,11 @@ public:
     //생성자
     vascularity(cv::Mat img, cv::Mat vmask);
 
-    //그래프 구척 관련 메소드
+    //그래프 관련 메소드
     void make_graph();
 
+    //기타 메소드
+    void visualize();
     void where(const cv::Mat& skel, std::vector<cv::Point> &result);
 };
 

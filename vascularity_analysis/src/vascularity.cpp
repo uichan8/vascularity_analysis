@@ -9,8 +9,9 @@
 #include "branch_vectorization.hpp"
 #include "vessel_width_detection.hpp"
 #include "bifur_vectorization.hpp"
-#define M_PI 3.14159265358979323846
 #include "skeletonize.hpp"
+
+#define M_PI 3.14159265358979323846
 
 using namespace std;
 
@@ -21,7 +22,7 @@ vascularity::vascularity(cv::Mat img, cv::Mat vmask) {
 	make_graph();
 }
 
-void vascularity::make_graph(){
+void vascularity::make_graph() {
 	//체널 분리
 	cv::Mat branch_mask;
 	mask.copyTo(branch_mask);
@@ -30,43 +31,69 @@ void vascularity::make_graph(){
 	cv::GaussianBlur(fundus, blur_fundus, cv::Size(5, 5), 3);
 	cv::cvtColor(blur_fundus, blur_fundus, cv::COLOR_BGR2GRAY);
 
-
 	//체널 분리(의찬)
 	cv::Mat mask_channels[3];
+	cv::Mat mask_for_skel[3];
 	cv::split(mask, mask_channels);
+	cv::split(mask, mask_for_skel);
+
+	//닫힘 연산(의찬) 스켈레톤에서 노이즈한 구멍들을 제거하기 위한 연산
+	cv::Mat element = getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3), cv::Point(1, 1));
+	for (int i = 0; i < 3; i++) {
+		if (i == 1) continue;
+		dilate(mask_for_skel[i], mask_for_skel[i], element);
+		erode(mask_for_skel[i], mask_for_skel[i], element);
+	}
 
 	//스켈레톤(의찬)
 	cv::Mat skel_channels[3];
-	for (int i = 0; i < 3; i++)
-		skeletonize(mask_channels[i], skel_channels[i]);
+	for (int i = 0; i < 3; i++) {
+		if (i == 1) continue;
+		skeletonize(mask_for_skel[i], skel_channels[i]);
+	}
 
 	//bifur 위치 중심 마스크 계산하기(의찬)
 	cv::Mat bifur_map[3];
 	points P;
-	for (int i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++){
+		if (i == 1) continue;
 		P.find_bifur_points(skel_channels[i], bifur_map[i]);
+	}
 
 	//bifur 중심 좌표 찾기(의찬)
 	std::vector<cv::Point> bifur_coor[3];
 	for (int i = 0; i < 3; i++)
 		where(bifur_map[i], bifur_coor[i]);
 
+	//팽창연산 길이가 1인 부분을 제대로 잡기 위한 연산
+	for (int i = 0; i < 3; i++) 
+		dilate(mask_for_skel[i], mask_for_skel[i], element);
+
 	//bifur 마스크 찾기, 유효 branch 중심 찾기(의찬)
 	Circle C(19);
 	vector<cv::Mat> bifur_mask[3];
 	cv::Mat branch_map[3];
 	for (int i = 0; i < 3; i++) {
-		branch_map[i] = skel_channels[i].clone();
+		branch_map[i] = mask_for_skel[i].clone();
 		for (int j = 0; j < bifur_coor[i].size(); ++j) {
 			cv::Mat bifur_mask_seg;
+			vbifur new_bifur;
 			int x = bifur_coor[i][j].x;
 			int y = bifur_coor[i][j].y;
+			new_bifur.set_center_coor(bifur_coor[i][j]);
+
+			//bifur_mask 찾기
 			find_bifur_mask(mask_channels[i], x, y, C, bifur_mask_seg);
+			new_bifur.set_vbifur_mask(bifur_mask_seg);
 			int circle_r = bifur_mask_seg.rows / 2;
 			int circle_idx = circle_r / 2;
 			vector<vector<int>> C_mask = C.get_circle_mask_list()[circle_idx];
 
+			//마스크 정보 추가
+			if (i == 2) a_graph.add_bifur(new_bifur);
+			else if (i == 0) v_graph.add_bifur(new_bifur);
 
+			//유효 branch 계산
 			for (int k = 0; k < bifur_mask_seg.rows; k++) {
 				for (int l = 0; l < bifur_mask_seg.rows; l++) {
 					if (C_mask[k][l]) {
@@ -88,14 +115,14 @@ void vascularity::make_graph(){
 		make_tuple(retvals_r, labels_r, mask_channels[2], 'r'),
 		make_tuple(retvals_b, labels_b, mask_channels[0], 'b')
 	};
-    
+
 	vector<cv::Point2d> center, sub_edge;
 	vector<cv::Point2d> sub;
 
 	// branch_vectorization(종수)
 	for (auto& vessel : vessel_informs) {
 		//sub_edge.clear();
-		
+
 		int retvals = get<0>(vessel);
 		cv::Mat labels = get<1>(vessel);
 		cv::Mat bmask = get<2>(vessel);
@@ -106,8 +133,12 @@ void vascularity::make_graph(){
 			cv::Mat target_line = (labels == i);
 			vector<cv::Point2d> sorted_points = sort_points(target_line);
 
-			if (sorted_points.size() < 6)
+			if (sorted_points.size() < 6) // -> 이 부분에서 너무 짧은 branch는 버리는게 아니라 마스크 기반으로 그냥 냅드는 게 나은 듯
 				continue;
+
+			//양 끝점 정보 입력(의찬)
+			vbranch new_branch;
+			new_branch.set_end_points(sorted_points[0], sorted_points.back());
 
 			//마스크 맵 기반 혈관 굵기 추정
 			tuple<vector<double>, vector<double>, vector<double>, vector<double>> edge = mask_witdth_detection(bmask, sorted_points);
@@ -117,15 +148,13 @@ void vascularity::make_graph(){
 			vector<double> edge_y = get<2>(edge);
 			vector<double> edge_y2 = get<3>(edge);
 
-
-
+			//bifur를 찾기 위한 mask
 			if (edge_x.size() > 4) {
 				draw_line(branch_mask, cv::Point2d(edge_x[1], edge_y[1]), cv::Point2d(edge_x2[1], edge_y2[1]), color);
 				draw_line(branch_mask, cv::Point2d(edge_x[edge_x.size() - 2], edge_y[edge_y.size() - 2]), cv::Point2d(edge_x2[edge_x2.size() - 2], edge_y2[edge_y2.size() - 2]), color);
 			}
 
-
-            //포인트 샘플링
+			//포인트 샘플링
 			edge_x = simple_sampling(edge_x, 2);
 			edge_y = simple_sampling(edge_y, 2);
 			edge_x2 = simple_sampling(edge_x2, 2);
@@ -163,8 +192,6 @@ void vascularity::make_graph(){
 			pair<vector<vector<double>>, vector<vector<double>>> spline = fit(x_cen, y_cen, 1.5);
 
 			// supixel_localization point 기반 혈관 중심과 edge_point 개선
-			x_cen = get_lines(spline.first, sampling_num);
-			y_cen = get_lines(spline.second, sampling_num);
 			spline_diff_x = differentiate(spline.first);
 			spline_diff_y = differentiate(spline.second);
 
@@ -175,26 +202,23 @@ void vascularity::make_graph(){
 				}
 				spline_diff_poly.push_back(spline_diff_poly_row);
 			}
+			// branch center정보 추가 (의찬)
+			new_branch.set_poly_x(spline.first);
+			new_branch.set_poly_y(spline.second);
+
 			spline_diff = get_lines(spline_diff_poly, sampling_num);
 
 			for (int i = 0; i < r.size(); i++) {
 				r_len.push_back(static_cast<double>(i));
 			}
 			pair<vector<vector<double>>, vector<vector<double>>> spline_r = fit(r_len, r, 1.5);
-			
-			r = get_lines(spline_r.second, sampling_num);
 
-			delete_outliers(x_cen, y_cen, r, spline_diff, 2);
+			//branch r 정보 추가 (의찬)
+			new_branch.set_poly_r(spline_r.second);
 
-			for (const auto& diff : spline_diff) {
-				angle.push_back(atan(diff) + M_PI / 2);
-			}
-
-			for (size_t i = 0; i < x_cen.size(); i++) {
-				sub_edge.push_back(cv::Point2d(x_cen[i] + r[i] * cos(angle[i]), y_cen[i] + r[i] * sin(angle[i])));
-				sub_edge.push_back(cv::Point2d(x_cen[i] + r[i] * cos(angle[i] + M_PI), y_cen[i] + r[i] * sin(angle[i]) + M_PI));
-				center.push_back(cv::Point2d(x_cen[i], y_cen[i]));
-			}
+			//그래프에 데이터 추가
+			if (color == 'r') a_graph.add_branch(new_branch);
+			else if (color == 'b') v_graph.add_branch(new_branch);
 		}
 	}
 
@@ -210,69 +234,55 @@ void vascularity::make_graph(){
 	cv::split(mask_edge, edge_channels);
 
 	//Bifur 검출(종수)
-	for (auto pts : bifur_coor[2]) {
-		int label = labels_r.at<int>(static_cast<int>(pts.y), static_cast<int>(pts.x));
-		if (cv::countNonZero(labels_r == label) < 2000) {
-			cv::Mat branch_edge = (labels_r == label) * 255;
-			cv::Mat kernel = cv::Mat::ones(3, 3, CV_8U);
-			kernel.at<uchar>(0, 0) = 0;
-			kernel.at<uchar>(0, 2) = 0;
-			kernel.at<uchar>(2, 0) = 0;
-			kernel.at<uchar>(2, 2) = 0;
-			cv::Mat dilated_mask;
-			cv::dilate(branch_edge, dilated_mask, kernel, cv::Point(-1, -1), 1);
-			dilated_mask &= (mask_channels[2] == 0);
-			edge_channels[2] += dilated_mask;
+	for (int i = 0; i < 3; i++) {
+		if (i == 1) continue;
+		std::vector<cv::Point> bc = bifur_coor[i];
+		for (auto pts : bc) {
+			int label = labels_r.at<int>(static_cast<int>(pts.y), static_cast<int>(pts.x));
+			if (cv::countNonZero(labels_r == label) < 2000) {
+				cv::Mat branch_edge = (labels_r == label) * 255;
+				cv::Mat kernel = cv::Mat::ones(3, 3, CV_8U);
+				kernel.at<uchar>(0, 0) = 0;
+				kernel.at<uchar>(0, 2) = 0;
+				kernel.at<uchar>(2, 0) = 0;
+				kernel.at<uchar>(2, 2) = 0;
+				cv::Mat dilated_mask;
+				cv::dilate(branch_edge, dilated_mask, kernel, cv::Point(-1, -1), 1);
+				dilated_mask &= (mask_channels[2] == 0);
+
+				// bifur edge 정보 추가
+				vector<cv::Point> edges;
+				where(dilated_mask, edges);
+				vbifur target;
+				if (i == 0) v_graph.find_bifur(pts, target);
+				else if (i == 2) a_graph.find_bifur(pts, target);
+				target.set_bifur_edge(edges);
+			}
 		}
 	}
-
-	for (auto pts : bifur_coor[0]) {
-		int label = labels_b.at<int>(static_cast<int>(pts.y), static_cast<int>(pts.x));
-		if (cv::countNonZero(labels_b == label) < 2000) {
-			cv::Mat branch_edge = (labels_b == label) * 255;
-			cv::Mat kernel = cv::Mat::ones(3, 3, CV_8U);
-			kernel.at<uchar>(0, 0) = 0;
-			kernel.at<uchar>(0, 2) = 0;
-			kernel.at<uchar>(2, 0) = 0;
-			kernel.at<uchar>(2, 2) = 0;
-			cv::Mat dilated_mask;
-			cv::dilate(branch_edge, dilated_mask, kernel, cv::Point(-1, -1), 1);
-			dilated_mask &= (mask_channels[0] == 0);
-			edge_channels[0] += dilated_mask;
-		}
-	}
-	vector<cv::Point> edge_r, edge_b;
-
-	where(edge_channels[2], edge_r);
-	where(edge_channels[0], edge_b);
-
-
-	for (const cv::Point2d& point : sub) {
-		// 좌표값에 해당하는 원 그리기
-		cv::circle(fundus, cv::Point(point.x, point.y), 1, cv::Scalar(0, 0, 255), -1);
-	}
-
-	for (const cv::Point2d& point : center) {
-		// 좌표값에 해당하는 원 그리기
-		cv::circle(fundus, cv::Point(point.x, point.y), 1, cv::Scalar(255, 255, 255), -1);
-	}
-
-	for (const cv::Point2d& point : edge_r) {
-		// 좌표값에 해당하는 원 그리기
-		cv::circle(fundus, cv::Point(point.x, point.y), 1, cv::Scalar(0, 255, 255), -1);
-	}
-
-	for (const cv::Point2d& point : edge_b) {
-		// 좌표값에 해당하는 원 그리기
-		cv::circle(fundus, cv::Point(point.x, point.y), 1, cv::Scalar(255, 0, 0), -1);
-	}
-
-	cv::imwrite("ressult.bmp", fundus);
-	cv::imshow("fundus", fundus);
-	cv::waitKey(0);
-
+	a_graph.connect();
+	v_graph.connect();
 }
 
+void vascularity::visualize(){
+	//이미지를 불러온 후 n배로
+	cv::Mat img = fundus.clone();
+	double scale = 2;
+	int newWidth = static_cast<int>(img.cols * scale);
+	int newHeight = static_cast<int>(img.rows * scale);
+	cv::resize(img, img, cv::Size(newWidth, newHeight));
+
+	//bifur 정보 그리기
+	for (int i = 0; i < a_graph.get_bifur().size(); ++i) {
+		vector<cv::Point> points = a_graph.get_bifur()[i].get_bifur_edge();
+		for (int j = 0; j < points.size(); ++j) {
+			cv::circle(img, cv::Point(points[j].x * scale, points[j].y * scale), 3, cv::Scalar(0, 0, 255), -1);
+		}
+	}
+
+	cv::imshow("vis", img);
+	cv::waitKey(0);
+}
 
 void vascularity::where(const cv::Mat& skel, std::vector<cv::Point> &result) {
 	for (int y = 0; y < skel.rows; ++y) {

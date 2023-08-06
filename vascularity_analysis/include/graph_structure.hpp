@@ -26,36 +26,40 @@ public:
 
 class vbranch : public vnode {
 private:
-	std::vector<int*> branch_segments;
-	std::vector<int*> branch_r;
+	std::vector<std::vector<double>> branch_poly_x;
+	std::vector<std::vector<double>> branch_poly_y;
+	std::vector<std::vector<double>> branch_poly_r;
 	cv::Point end_points[2]; //그래프에서 바이퍼랑 연결 할 때 필요한 코드
 
 public:
 	//getter
-	std::vector<int*>& get_branch_segments();
-	std::vector<int*>& get_branch_r();
+	std::vector<std::vector<double>> get_poly_x();
+	std::vector<std::vector<double>> get_poly_y();
+	std::vector<std::vector<double>> get_poly_r();
 
 	//setter
-	void set_branch_segments(const std::vector<int*>& segments);
-	void set_branch_r(const std::vector<int*>& rValues);
-
-	//method
-	void add_segment_data(int* segment, int* r); // branch에서 여러 부분으로 나눈 후에 각각의 데이터를 추가해주는 메소드
+	void set_poly_x(const std::vector<std::vector<double>>& poly_x);
+	void set_poly_y(const std::vector<std::vector<double>>& poly_y);
+	void set_poly_r(const std::vector<std::vector<double>>& poly_r);
+	void set_end_points(cv::Point pt1, cv::Point pt2);
 };
 
 class vbifur : public vnode {
 private:
 	cv::Point center_coor;
 	cv::Mat vbifur_mask;
+	std::vector<cv::Point> bifur_edge;
 
 public:
 	//getter
 	cv::Point& get_center_coor();
 	cv::Mat& get_vbifur_mask();
+	std::vector<cv::Point>& get_bifur_edge();
 
 	//setter
 	void set_center_coor(cv::Point& center);
 	void set_vbifur_mask(cv::Mat& mask);
+	void set_bifur_edge(std::vector<cv::Point> edge);
 };
 
 //-----------------------------------------------------------------------
@@ -66,8 +70,11 @@ private:
 	std::vector <vbranch> vbranches;
 	std::vector <vbifur> vbifurs;
 public:
+	std::vector<vbranch> get_branch();
+	std::vector<vbifur> get_bifur();
 	void add_bifur(vbifur new_bifur);
 	void add_branch(vbranch new_branch);
+	bool find_bifur(cv::Point center, vbifur& dst); //중심 좌표를 입력하면, 해당하는 bifur을 가져오는 함수
 	void connect();
 };
 
