@@ -220,6 +220,8 @@ void vascularity::make_graph() {
 			if (color == 'r') a_graph.add_branch(new_branch);
 			else if (color == 'b') v_graph.add_branch(new_branch);
 		}
+		cv::imwrite("cut.bmp", branch_mask);
+		cv::waitKey(0);
 	}
 
 	cv::Mat branch_channels[3];
@@ -237,26 +239,31 @@ void vascularity::make_graph() {
 	for (int i = 0; i < 3; i++) {
 		if (i == 1) continue;
 		std::vector<cv::Point> bc = bifur_coor[i];
+		cv::Mat kernel = cv::Mat::ones(3, 3, CV_8U);
+		kernel.at<uchar>(0, 0) = 0;
+		kernel.at<uchar>(0, 2) = 0;
+		kernel.at<uchar>(2, 0) = 0;
+		kernel.at<uchar>(2, 2) = 0;
+
+		cv::Mat target_label;
+		if (i == 0) target_label = labels_b;
+		else target_label = labels_r;
+
 		for (auto pts : bc) {
-			int label = labels_r.at<int>(static_cast<int>(pts.y), static_cast<int>(pts.x));
-			if (cv::countNonZero(labels_r == label) < 2000) {
-				cv::Mat branch_edge = (labels_r == label) * 255;
-				cv::Mat kernel = cv::Mat::ones(3, 3, CV_8U);
-				kernel.at<uchar>(0, 0) = 0;
-				kernel.at<uchar>(0, 2) = 0;
-				kernel.at<uchar>(2, 0) = 0;
-				kernel.at<uchar>(2, 2) = 0;
+			int label = target_label.at<int>(static_cast<int>(pts.y), static_cast<int>(pts.x));
+			if (cv::countNonZero(target_label == label) < 2000) {
+				cv::Mat branch_edge = (target_label == label) * 255;
 				cv::Mat dilated_mask;
 				cv::dilate(branch_edge, dilated_mask, kernel, cv::Point(-1, -1), 1);
-				dilated_mask &= (mask_channels[2] == 0);
+				cv::imshow("a", dilated_mask);
+				cv::waitKey(0);
+				dilated_mask &= (branch_channels[i] == 0);
 
 				// bifur edge 정보 추가
 				vector<cv::Point> edges;
 				where(dilated_mask, edges);
-				vbifur target;
-				if (i == 0) v_graph.find_bifur(pts, target);
-				else if (i == 2) a_graph.find_bifur(pts, target);
-				target.set_bifur_edge(edges);
+				if (i == 0) v_graph.find_bifur(pts).set_bifur_edge(edges);
+				else if (i == 2) a_graph.find_bifur(pts).set_bifur_edge(edges);
 			}
 		}
 	}
@@ -273,10 +280,10 @@ void vascularity::visualize(){
 	cv::resize(img, img, cv::Size(newWidth, newHeight));
 
 	//bifur 정보 그리기
-	for (int i = 0; i < a_graph.get_bifur().size(); ++i) {
-		vector<cv::Point> points = a_graph.get_bifur()[i].get_bifur_edge();
+	for (int i = 0; i < v_graph.get_bifur().size(); ++i) {
+		vector<cv::Point> points = v_graph.get_bifur()[i].get_bifur_edge();
 		for (int j = 0; j < points.size(); ++j) {
-			cv::circle(img, cv::Point(points[j].x * scale, points[j].y * scale), 3, cv::Scalar(0, 0, 255), -1);
+			cv::circle(img, cv::Point(points[j].x * scale, points[j].y * scale), 1, cv::Scalar(0, 0, 255), -1);
 		}
 	}
 

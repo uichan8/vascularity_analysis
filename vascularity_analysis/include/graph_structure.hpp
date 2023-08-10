@@ -74,7 +74,7 @@ public:
 	std::vector<vbifur> get_bifur();
 	void add_bifur(vbifur new_bifur);
 	void add_branch(vbranch new_branch);
-	bool find_bifur(cv::Point center, vbifur& dst); //중심 좌표를 입력하면, 해당하는 bifur을 가져오는 함수
+	vbifur& find_bifur(cv::Point center); //중심 좌표를 입력하면, 해당하는 bifur을 가져오는 함수
 	void connect();
 };
 

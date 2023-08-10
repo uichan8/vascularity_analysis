@@ -124,14 +124,13 @@ vector <vbifur> vgraph::get_bifur() {
 }
 
 
-bool vgraph::find_bifur(cv::Point center, vbifur& dst) {
+vbifur& vgraph::find_bifur(cv::Point center) {
 	for (int i = 0; i < vbifurs.size(); ++i) {
 		if(vbifurs[i].get_center_coor() == center){
-			dst = vbifurs[i];
-			return true;
+			vbifur&  dst = vbifurs[i];
+			return dst;
 		}
 	}
-	return false;
 }
 
 void vgraph::connect() {
