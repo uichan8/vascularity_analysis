@@ -22,11 +22,6 @@ Circle::Circle(int max_r = 19) {
 		}
 	}
 }
-/*
-bool Circle::comparePair(pair<int, int>& p1, pair<int, int>& p2) {
-	return angle(0, 0, p1.first, p1.second) < angle(0, 0, p2.first, p2.second);
-}
-*/
 
 double Circle::angle(double x_center, double y_center, double x, double y) {
 	double dx = x - x_center;

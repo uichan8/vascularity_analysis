@@ -1,5 +1,7 @@
 #include "opencv2/opencv.hpp"
 #include "branch_vectorization.hpp"
+#include "graph_structure.hpp"
+#include "vessel_width_detection.hpp"
 
 #include <iostream>
 #include <vector>
@@ -25,6 +27,41 @@ int count_boundary_point(cv::Mat target_line_mask, cv::Point2d point) {
 
 	return num_count;
 }
+
+std::vector<cv::Point2d> track_branch_centerline(cv::Point2d start_point, cv::Mat& skel, cv::Mat& bifur_center_map, cv::Point2d& end_branch) {
+	std::vector<cv::Point2d> branch_line;
+	
+	cv::Point2d target_point = start_point;
+	branch_line.push_back(target_point);
+
+	end_branch = cv::Point2d(-1, -1);
+	while (!bifur_center_map.at<uchar>(target_point.y,target_point.x)) {
+		branch_line.push_back(target_point);
+		skel.at<cv::Vec3b>(target_point.y, target_point.x) = 0;
+		vector<cv::Point2d> neighbors = {
+			cv::Point2d(target_point.x + 1, target_point.y),
+			cv::Point2d(target_point.x, target_point.y - 1),
+			cv::Point2d(target_point.x, target_point.y + 1),
+			cv::Point2d(target_point.x - 1, target_point.y),
+			cv::Point2d(target_point.x - 1, target_point.y - 1),
+			cv::Point2d(target_point.x - 1, target_point.y + 1),
+			cv::Point2d(target_point.x + 1, target_point.y - 1),
+			cv::Point2d(target_point.x + 1, target_point.y + 1)
+		};
+
+		for (int i = 0; i < 8; i++) {
+			if (skel.at<uchar>(neighbors[i].y, neighbors[i].x)) {
+				target_point = neighbors[i];
+				break;
+			}
+			return branch_line; //주변에 아무 포인트가 없을때
+		}
+
+	}
+	end_branch = target_point;
+	return branch_line;
+}
+
 cv::Point2d find_end_point(cv::Mat target_line_mask) {
 	cv::Point2d point = cv::Point2d(-1, -1);
 
@@ -106,6 +143,47 @@ vector<cv::Point2d> sort_points(const cv::Mat& target_line_mask) {
 	vector<cv::Point2d> result = find_track_path(mask_copy2, end_point);
 
 	return result;
+}
+
+vbranch get_branch_vector(std::vector<cv::Point2d>& center_points, cv::Mat& mask, cv::Mat& fundus) {
+	vbranch result;
+	
+	tuple<vector<double>, vector<double>, vector<double>, vector<double>> edge = mask_witdth_detection(mask, center_points);
+
+	vector<double> edge_x = get<0>(edge);
+	vector<double> edge_x2 = get<1>(edge);
+	vector<double> edge_y = get<2>(edge);
+	vector<double> edge_y2 = get<3>(edge);
+
+	edge_x = simple_sampling(edge_x, 2);
+	edge_y = simple_sampling(edge_y, 2);
+	edge_x2 = simple_sampling(edge_x2, 2);
+	edge_y2 = simple_sampling(edge_y2, 2);
+
+	vector<double> x_cen(edge_x.size());
+	vector<double> y_cen(edge_x.size());
+	vector<double> center_tan(edge_x.size());
+	vector<double> vessel_w(edge_x.size());
+	vector<double> r;
+
+	for (size_t i = 0; i < edge_x.size(); i++) {
+		x_cen[i] = (edge_x[i] + edge_x2[i]) / 2.0;
+		y_cen[i] = (edge_y[i] + edge_y2[i]) / 2.0;
+		center_tan[i] = (edge_y[i] - edge_y2[i]) / (edge_x[i] - edge_x2[i] + 1e-12);
+		vessel_w[i] = sqrt(pow((edge_y[i] - edge_y2[i]), 2) + pow((edge_x[i] - edge_x2[i]), 2)) / 2.0;
+	}
+	// subpixel localization
+	for (size_t i = 0; i < x_cen.size(); i++) {
+		vector<cv::Point2d> edge_coor;
+		edge_coor = get_edge(blur_fundus, cv::Point2d(x_cen[i], y_cen[i]), center_tan[i], vessel_w[i]);
+
+		sub.push_back(edge_coor[0]);
+		sub.push_back(edge_coor[1]);
+
+		x_cen[i] = (edge_coor[0].x + edge_coor[1].x) / 2;
+		y_cen[i] = (edge_coor[0].y + edge_coor[1].y) / 2;
+		r.push_back(sqrt(pow((edge_coor[0].x - edge_coor[1].x), 2) + pow((edge_coor[0].y - edge_coor[1].y), 2)) / 2);
+	}
 }
 
 vector<double> hermite_spline(double x1, double y1, double g1, double x2, double y2, double g2) {
