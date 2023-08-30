@@ -8,8 +8,8 @@ class Circle {
 
 private:
     int MAX_R;
-    std::vector<std::vector<std::pair<int, int>>> circle_edge_list;
-    std::vector<std::vector<std::vector<int>>> circle_mask_list;
+    std::vector<cv::Mat> circle_edge_list;
+    std::vector<cv::Mat> circle_mask_list;
 
 public:
     Circle(int max_r);
@@ -18,17 +18,17 @@ public:
 
     //bool comparePair(std::pair<int, int>& p1,std::pair<int, int>& p2);
 
-    std::vector<std::pair<int, int>> get_circle(int r);
+    cv::Mat get_circle(int r);
 
-    std::vector<std::vector<int>> get_circle_mask(int radius = 19);
+    cv::Mat get_circle_mask(int radius = 19);
 
-    std::vector<std::vector<std::pair<int, int>>>& get_circle_edge_list();
+    std::vector<cv::Mat>& get_circle_edge_list();
 
-    std::vector<std::vector<std::vector<int>>>& get_circle_mask_list();
+    std::vector<cv::Mat>& get_circle_mask_list();
     int get_MAX_R();
 };
 
-std::vector<int> get_pixel_values(cv::Mat& mask, std::vector<std::pair<int, int>>& coordinates);
+std::vector<int> get_pixel_values(cv::Mat& mask, std::vector<cv::Point>& coordinates);
 
 void find_bifur_mask(cv::Mat& mask, int x, int y, Circle C, cv::Mat& output);
 

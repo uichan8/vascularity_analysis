@@ -9,7 +9,7 @@
 
 using namespace std;
 
-tuple<vector<double>, vector<double>, vector<double>, vector<double>>mask_witdth_detection(cv::Mat& seg_mask, vector<cv::Point2d> pts_arr) {
+Edge mask_witdth_detection(cv::Mat& seg_mask, vector<cv::Point2d> pts_arr) {
     vector<double> x1_edge, x2_edge, y1_edge, y2_edge;
     double x, y, diff_x, diff_y, normal_x, normal_y;
 
@@ -73,8 +73,13 @@ tuple<vector<double>, vector<double>, vector<double>, vector<double>>mask_witdth
             y2 = y_pprime;
         }
     }
+    Edge edge;
+    edge.edge_x1 = x1_edge;
+    edge.edge_x2 = x2_edge;
+    edge.edge_y1 = y1_edge;
+    edge.edge_y2 = y2_edge;
 
-    return make_tuple(x1_edge, x2_edge, y1_edge, y2_edge);
+    return edge;
 }
 
 /**

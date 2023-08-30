@@ -88,7 +88,7 @@ void vascularity::make_graph() {
 			new_bifur.set_vbifur_mask(bifur_mask_seg);
 			int circle_r = bifur_mask_seg.rows / 2;
 			int circle_idx = circle_r / 2;
-			vector<vector<int>> C_mask = C.get_circle_mask_list()[circle_idx];
+			cv::Mat C_mask = C.get_circle_mask_list()[circle_idx];
 
 			//마스크 정보 추가
 			if (i == 2) a_graph.add_bifur(new_bifur);
@@ -97,7 +97,7 @@ void vascularity::make_graph() {
 			//유효 branch 계산
 			for (int k = 0; k < bifur_mask_seg.rows; k++) {
 				for (int l = 0; l < bifur_mask_seg.rows; l++) {
-					if (C_mask[k][l]) {
+					if (C_mask.at<uchar>(k,l)) {
 						int target_x = x + l - circle_r, target_y = y + k - circle_r;
 						branch_map[i].at<uchar>(target_y, target_x) = 0;
 					}
@@ -142,12 +142,12 @@ void vascularity::make_graph() {
 			new_branch.set_end_points(sorted_points[0], sorted_points.back());
 
 			//마스크 맵 기반 혈관 굵기 추정
-			tuple<vector<double>, vector<double>, vector<double>, vector<double>> edge = mask_witdth_detection(bmask, sorted_points);
+			Edge edge = mask_witdth_detection(bmask, sorted_points);
 
-			vector<double> edge_x = get<0>(edge);
-			vector<double> edge_x2 = get<1>(edge);
-			vector<double> edge_y = get<2>(edge);
-			vector<double> edge_y2 = get<3>(edge);
+			vector<double> edge_x = edge.edge_x1;
+			vector<double> edge_x2 = edge.edge_x2;
+			vector<double> edge_y = edge.edge_y1;
+			vector<double> edge_y2 = edge.edge_y2;
 
 			//bifur를 찾기 위한 mask
 			if (edge_x.size() > 4) {
@@ -187,14 +187,14 @@ void vascularity::make_graph() {
 			}
 
 			int sampling_num = 1;
-			vector<vector<double>> spline_diff_x, spline_diff_y, spline_diff_poly;
+			vector<vector<double>> spline_diff_x, spline_diff_y, spline_diff_poly, spline_x, spline_y, spline_rx, spline_ry;
 			vector<double> spline_diff, r_len, angle;
 
-			pair<vector<vector<double>>, vector<vector<double>>> spline = fit(x_cen, y_cen, 1.5);
+			fit(x_cen, y_cen, spline_x, spline_y,1.5);
 
 			// supixel_localization point 기반 혈관 중심과 edge_point 개선
-			spline_diff_x = differentiate(spline.first);
-			spline_diff_y = differentiate(spline.second);
+			spline_diff_x = differentiate(spline_x);
+			spline_diff_y = differentiate(spline_y);
 
 			for (size_t i = 0; i < spline_diff_x.size(); i++) {
 				vector<double> spline_diff_poly_row;
@@ -204,18 +204,18 @@ void vascularity::make_graph() {
 				spline_diff_poly.push_back(spline_diff_poly_row);
 			}
 			// branch center정보 추가 (의찬)
-			new_branch.set_poly_x(spline.first);
-			new_branch.set_poly_y(spline.second);
+			new_branch.set_poly_x(spline_x);
+			new_branch.set_poly_y(spline_y);
 
 			spline_diff = get_lines(spline_diff_poly, sampling_num);
 
 			for (int i = 0; i < r.size(); i++) {
 				r_len.push_back(static_cast<double>(i));
 			}
-			pair<vector<vector<double>>, vector<vector<double>>> spline_r = fit(r_len, r, 1.5);
+			fit(r_len, r, spline_rx, spline_ry, 1.5);
 
 			//branch r 정보 추가 (의찬)
-			new_branch.set_poly_r(spline_r.second);
+			new_branch.set_poly_r(spline_ry);
 
 			//그래프에 데이터 추가
 			if (color == 'r') a_graph.add_branch(new_branch);
@@ -273,6 +273,7 @@ void vascularity::make_graph() {
 	cv::imshow("a", branch_mask);
 	cv::waitKey(0);
 }
+
 
 void vascularity::make_graph() {
 	//체널 분리(의찬)
@@ -393,6 +394,7 @@ void vascularity::make_graph() {
 		}
 	}
 }
+
 
 void vascularity::where(const cv::Mat& skel, std::vector<cv::Point> &result) {
 	for (int y = 0; y < skel.rows; ++y) {

@@ -27,7 +27,7 @@ std::vector<double> hermite_spline(double x1, double y1, double g1, double x2, d
 
 double substitute(std::vector<double> coefficients, double x);
 
-std::pair<std::vector<std::vector<double>>, std::vector<std::vector<double>>> fit(std::vector<double> x, std::vector<double> y, double k = 1);
+void fit(std::vector<double> x, std::vector<double> y, std::vector<std::vector<double>>& poly_x, std::vector<std::vector<double>>& poly_y,  double k = 1);
 
 std::vector<double> get_lines(std::vector<std::vector<double>> poly_x, int sample_num = 10);
 

@@ -33,7 +33,7 @@ double Circle::angle(double x_center, double y_center, double x, double y) {
 }
 
 
-vector<pair<int, int>> Circle::get_circle(int r) {
+cv::Mat Circle::get_circle(int r) {
 	int x = 0;
 	int y = r;
 	int d = 3 - 2 * r;
@@ -73,39 +73,45 @@ vector<pair<int, int>> Circle::get_circle(int r) {
 		return angle(0, 0, p1.first, p1.second) < angle(0, 0, p2.first, p2.second);
 		});
 
-	return circle_coor;
+	cv::Mat circle_mat(circle_coor.size(), 2, CV_32SC1);
+	for (size_t i = 0; i < circle_coor.size(); ++i) {
+		circle_mat.at<int>(i, 0) = circle_coor[i].first;
+		circle_mat.at<int>(i, 1) = circle_coor[i].second;
+	}
+
+	return circle_mat;
 }
 
-vector<vector<int>> Circle::get_circle_mask(int radius) {
+cv::Mat Circle::get_circle_mask(int radius) {
 	int mask_shape = 2 * radius + 1;
-	vector<vector<int>> mask(mask_shape, vector<int>(mask_shape, 0));
+	cv::Mat mask(mask_shape, mask_shape, CV_8UC1, cv::Scalar(0));
 
 	for (int y = 0; y < mask_shape; y++) {
 		for (int x = 0; x < mask_shape; x++) {
 			if (pow(x - radius, 2) + pow(y - radius, 2) <= pow(radius, 2)) {
-				mask[y][x] = 1;
+				mask.at<uchar>(y, x) = 1;
 			}
 		}
 	}
 	return mask;
 }
 
-vector<vector<pair<int, int>>>& Circle::get_circle_edge_list() {
+vector<cv::Mat>& Circle::get_circle_edge_list() {
 	return circle_edge_list;
 }
-vector<vector<vector<int>>>& Circle::get_circle_mask_list() {
+vector<cv::Mat>& Circle::get_circle_mask_list() {
 	return circle_mask_list;
 }
 int Circle::get_MAX_R() {
 	return MAX_R;
 }
 
-vector<int> get_pixel_values(cv::Mat& mask, vector<pair<int, int>>& coordinates) {
+vector<int> get_pixel_values(cv::Mat& mask, vector<cv::Point>& coordinates) {
 	vector<int> pixel_values;
 
 	for (const auto& coordinate : coordinates) {
-		int x = coordinate.first;
-		int y = coordinate.second;
+		int x = coordinate.x;
+		int y = coordinate.y;
 
 		if (x >= 0 && x < mask.cols && y >= 0 && y < mask.rows) {
 			pixel_values.push_back(mask.at<uchar>(y, x));
@@ -125,16 +131,16 @@ vector<int> get_pixel_values(cv::Mat& mask, vector<pair<int, int>>& coordinates)
 void find_bifur_mask(cv::Mat& mask, int x, int y, Circle C, cv::Mat& output) {
 	//bifur가 branch로 잘못 되어있는게 있음
 	int i = 0;
-	vector<vector<pair<int, int>>> circle_edge_list = C.get_circle_edge_list();
-	vector<vector<vector<int>>> circle_mask_list = C.get_circle_mask_list();
+	vector<cv::Mat> circle_edge_list = C.get_circle_edge_list();
+	vector<cv::Mat> circle_mask_list = C.get_circle_mask_list();
 
-	for (const auto& circle_edge : circle_edge_list) {
+	for (size_t k = 0; k < circle_edge_list.size(); k++) {
 		int r = 2 * i + 1;
-		vector<pair<int, int>> coor;
-		for (const auto& coordinate : circle_edge) {
-			int coor_x = coordinate.first + x;
-			int coor_y = coordinate.second + y;
-			coor.push_back(make_pair(coor_x, coor_y));
+		vector<cv::Point> coor;
+		for (int row = 0; row < circle_edge_list[k].rows; row++) {
+			int coor_x = circle_edge_list[k].at<int>(row, 0) + x;
+			int coor_y = circle_edge_list[k].at<int>(row, 1) + y;
+			coor.push_back(cv::Point(coor_x, coor_y));
 		}
 
 		vector<int> l = get_pixel_values(mask, coor);
@@ -157,7 +163,7 @@ void find_bifur_mask(cv::Mat& mask, int x, int y, Circle C, cv::Mat& output) {
 	for (int j = y - r; j <= y + r; j++) {
 		for (int k = x - r; k <= x + r; k++) {
 			if (j >= 0 && j < mask.rows && k >= 0 && k < mask.cols) {
-				output.at<uchar>(j - y + r, k - x + r) = mask.at<uchar>(j, k) * circle_mask_list[i][j - y + r][k - x + r];
+				output.at<uchar>(j - y + r, k - x + r) = mask.at<uchar>(j, k) * circle_mask_list[i].at<uchar>(j - y + r, k - x + r);
 			}
 		}
 	}

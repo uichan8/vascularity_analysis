@@ -148,12 +148,12 @@ vector<cv::Point2d> sort_points(const cv::Mat& target_line_mask) {
 vbranch get_branch_vector(std::vector<cv::Point2d>& center_points, cv::Mat& mask, cv::Mat& fundus) {
 	vbranch result;
 	
-	tuple<vector<double>, vector<double>, vector<double>, vector<double>> edge = mask_witdth_detection(mask, center_points);
+	Edge edge = mask_witdth_detection(mask, center_points);
 
-	vector<double> edge_x = get<0>(edge);
-	vector<double> edge_x2 = get<1>(edge);
-	vector<double> edge_y = get<2>(edge);
-	vector<double> edge_y2 = get<3>(edge);
+	vector<double> edge_x = edge.edge_x1;
+	vector<double> edge_x2 = edge.edge_x2;
+	vector<double> edge_y = edge.edge_y1;
+	vector<double> edge_y2 = edge.edge_y2;
 
 	edge_x = simple_sampling(edge_x, 2);
 	edge_y = simple_sampling(edge_y, 2);
@@ -173,6 +173,7 @@ vbranch get_branch_vector(std::vector<cv::Point2d>& center_points, cv::Mat& mask
 		vessel_w[i] = sqrt(pow((edge_y[i] - edge_y2[i]), 2) + pow((edge_x[i] - edge_x2[i]), 2)) / 2.0;
 	}
 	// subpixel localization
+	
 	for (size_t i = 0; i < x_cen.size(); i++) {
 		vector<cv::Point2d> edge_coor;
 		edge_coor = get_edge(blur_fundus, cv::Point2d(x_cen[i], y_cen[i]), center_tan[i], vessel_w[i]);
@@ -184,7 +185,9 @@ vbranch get_branch_vector(std::vector<cv::Point2d>& center_points, cv::Mat& mask
 		y_cen[i] = (edge_coor[0].y + edge_coor[1].y) / 2;
 		r.push_back(sqrt(pow((edge_coor[0].x - edge_coor[1].x), 2) + pow((edge_coor[0].y - edge_coor[1].y), 2)) / 2);
 	}
+	
 }
+
 
 vector<double> hermite_spline(double x1, double y1, double g1, double x2, double y2, double g2) {
 	vector<double> coefficients;
@@ -209,12 +212,11 @@ double substitute(vector<double> coefficients, double x) {
 	return coefficients[0] * pow(x, 3) + coefficients[1] * pow(x, 2) + coefficients[2] * x + coefficients[3];
 }
 
-pair<vector<vector<double>>, vector<vector<double>>> fit(vector<double> x, vector<double> y, double k) {
-	vector<vector<double>> poly_x;
-	vector<vector<double>> poly_y;
+void fit(vector<double> x, vector<double> y, vector<vector<double>>& poly_x, vector<vector<double>>& poly_y, double k) {
+
 
 	if (x.size() < 5) {
-		return make_pair(poly_x, poly_y);
+		return;
 	}
 
 	vector<double> xi = { x[0] };
@@ -239,8 +241,7 @@ pair<vector<vector<double>>, vector<vector<double>>> fit(vector<double> x, vecto
 		poly_x.push_back(result_x);
 		poly_y.push_back(result_y);
 	}
-
-	return make_pair(poly_x, poly_y);
+	return;
 }
 
 vector<double> get_lines(vector<vector<double>> poly_x, int sample_num) {
