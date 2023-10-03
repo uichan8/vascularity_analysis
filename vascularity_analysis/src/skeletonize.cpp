@@ -7,6 +7,9 @@
 
 using namespace std;
 
+//----------------------------------------------------------------------------------
+//----------------------------------   skel   --------------------------------------
+//----------------------------------------------------------------------------------
 void skeletonize(const cv::Mat& mask, cv::Mat& skel) {
 	//차원추가
 	int rows = mask.rows;
@@ -194,7 +197,6 @@ bool is_Euler_invariant(int* neighborhood, vector<int>& LUT) {
 	return euler_char == 0;
 }
 
-
 bool is_simple_point(int* neighborhood) {
 	int cube[26];
 	for (int i = 0; i < 26; i++) {
@@ -230,8 +232,7 @@ bool is_simple_point(int* neighborhood) {
 	return true;
 }
 
-
-//--------------------------------LOOK_UP_TABLE-----------------------------------
+//LOOK_UP_TABLE
 void fill_Euler_LUT(vector<int>& LUT) {
 	int arr[128] = { 1, -1, -1, 1, -3, -1, -1, 1, -1, 1, 1, -1, 3, 1, 1, -1, -3, -1,
 				 3, 1, 1, -1, 3, 1, -1, 1, 1, -1, 3, 1, 1, -1, -3, 3, -1, 1, 1,
@@ -247,7 +248,6 @@ void fill_Euler_LUT(vector<int>& LUT) {
 	}
 }
 
-//vec (pare(vec,vec(vec)))
 std::vector<std::pair<std::vector<int>, std::vector<std::vector<int>>>> OC_TREE = {
 	{{0, 1, 3, 4, 9, 10, 12},      {{}, {2}, {3}, {2, 3, 4}, {5}, {2, 5, 6}, {3, 5, 7}}}, // octant 1
 	{{1, 4, 10, 2, 5, 11, 13},     {{1}, {1, 3, 4}, {1, 5, 6}, {}, {4}, {6}, {4, 6, 8}}}, // octant 2
@@ -277,4 +277,101 @@ void octree_labeling(int octant, int label, int *cube){
 			}
 		}
 	}
+}
+
+//----------------------------------------------------------------------------------
+//-----------------------------   skel analysis  -----------------------------------
+//----------------------------------------------------------------------------------
+
+points::points() {
+	cv::Mat X0 = (cv::Mat_<int>(3, 3) << -1, 1, -1, 1, 1, 1, -1, 1, -1);
+	cv::Mat X1 = (cv::Mat_<int>(3, 3) << 1, -1, 1, -1, 1, -1, 1, -1, 1);
+	X.insert(X.end(), { X0,X1 });
+
+	cv::Mat T0 = (cv::Mat_<int>(3, 3) << 0, 1, 0, 1, 1, 1, 0, 0, 0);
+	cv::Mat T1 = (cv::Mat_<int>(3, 3) << 1, 0, 1, 0, 1, 0, 1, 0, 0);
+	cv::Mat T2 = (cv::Mat_<int>(3, 3) << 0, 1, 0, 1, 1, 0, 0, 1, 0);
+	cv::Mat T3 = (cv::Mat_<int>(3, 3) << 1, 0, 0, 0, 1, 0, 1, 0, 1);
+	cv::Mat T4 = (cv::Mat_<int>(3, 3) << 0, 0, 0, 1, 1, 1, 0, 1, 0);
+	cv::Mat T5 = (cv::Mat_<int>(3, 3) << 0, 0, 1, 0, 1, 0, 1, 0, 1);
+	cv::Mat T6 = (cv::Mat_<int>(3, 3) << 0, 1, 0, 0, 1, 1, 0, 1, 0);
+	cv::Mat T7 = (cv::Mat_<int>(3, 3) << 1, 0, 1, 0, 1, 0, 0, 0, 1);
+	T.insert(T.end(), { T0,T1,T2,T3,T4,T5,T6,T7 });
+
+	cv::Mat Y0 = (cv::Mat_<int>(3, 3) << 1, -1, 1, -1, 1, -1, 0, 1, 0);
+	cv::Mat	Y1 = (cv::Mat_<int>(3, 3) << -1, 1, -1, 1, 1, 0, -1, 0, 1);
+	cv::Mat Y2 = (cv::Mat_<int>(3, 3) << 1, -1, 0, 1, 1, 1, 1, -1, 0);
+	cv::Mat Y3 = (cv::Mat_<int>(3, 3) << -1, 0, 1, 1, 1, 0, -1, 1, -1);
+	cv::Mat Y4 = (cv::Mat_<int>(3, 3) << 0, 1, 0, -1, 1, -1, 1, -1, 1);
+	cv::Mat Y5 = (cv::Mat_<int>(3, 3) << 1, 0, -1, 0, 1, 1, -1, 1, -1);
+	cv::Mat Y6 = (cv::Mat_<int>(3, 3) << 0, -1, 1, 1, 1, -1, 0, -1, 1);
+	cv::Mat Y7 = (cv::Mat_<int>(3, 3) << -1, 1, -1, 0, 1, 1, 1, 0, -1);
+	cv::Mat Y8 = (cv::Mat_<int>(3, 3) << 1, -1, 0, -1, 1, 1, 1, -1, 0);
+	Y.insert(Y.end(), { Y0,Y1,Y2,Y3,Y4,Y5,Y6,Y7,Y8 });
+
+	cv::Mat E0 = (cv::Mat_<int>(3, 3) << -1, -1, -1, -1, 1, -1, 0, 1, 0);
+	cv::Mat E1 = (cv::Mat_<int>(3, 3) << -1, -1, -1, -1, 1, 0, -1, 0, 1);
+	cv::Mat E2 = (cv::Mat_<int>(3, 3) << -1, -1, 0, -1, 1, 1, -1, -1, 0);
+	cv::Mat E3 = (cv::Mat_<int>(3, 3) << -1, 0, 1, -1, 1, 0, -1, -1, -1);
+	cv::Mat E4 = (cv::Mat_<int>(3, 3) << 0, 1, 0, -1, 1, -1, -1, -1, -1);
+	cv::Mat E5 = (cv::Mat_<int>(3, 3) << 1, 0, -1, 0, 1, -1, -1, -1, -1);
+	cv::Mat E6 = (cv::Mat_<int>(3, 3) << 0, -1, -1, 1, 1, -1, 0, -1, -1);
+	cv::Mat E7 = (cv::Mat_<int>(3, 3) << -1, -1, -1, 0, 1, -1, 1, 0, -1);
+	E.insert(E.end(), { E0,E1,E2,E3,E4,E5,E6,E7 });
+}
+
+vector<cv::Mat> points::get_X(){
+	return X;
+}
+
+vector<cv::Mat> points::get_T() {
+	return T;
+}
+
+vector<cv::Mat> points::get_Y() {
+	return Y;
+}
+
+vector<cv::Mat> points::get_E() {
+	return E;
+}
+
+void find_bifur_points(points P, const cv::Mat& skel_mask, cv::Mat& result_point_mask) {
+	cv::Mat output_img = cv::Mat::zeros(skel_mask.size(), skel_mask.type());
+	cv::Mat kerneloutput = cv::Mat::zeros(skel_mask.size(), skel_mask.type());
+
+	//X bifur
+	for (int i = 0; i < P.get_X().size(); i++) {
+		cv::morphologyEx(skel_mask, kerneloutput, cv::MORPH_HITMISS, P.get_X()[i]);
+		output_img = output_img + kerneloutput;
+	}
+
+	// T bifur
+	for (int i = 0; i < P.get_X().size(); i++) {
+		cv::morphologyEx(skel_mask, kerneloutput, cv::MORPH_HITMISS, P.get_X()[i]);
+		output_img = output_img + kerneloutput;
+	}
+
+	// Y bifur
+	for (int i = 0; i < P.get_X().size(); i++) {
+		cv::morphologyEx(skel_mask, kerneloutput, cv::MORPH_HITMISS, P.get_X()[i]);
+		output_img = output_img + kerneloutput;
+	}
+
+	// return result
+	result_point_mask = output_img;
+}
+
+void find_end_points(points P, const cv::Mat& skel_mask, cv::Mat& result_point_mask) {
+	cv::Mat output_img = cv::Mat::zeros(skel_mask.size(), skel_mask.type());
+	cv::Mat kerneloutput = cv::Mat::zeros(skel_mask.size(), skel_mask.type());
+
+	//E end
+	for (int i = 0; i < P.get_E().size(); i++) {
+		cv::morphologyEx(skel_mask, kerneloutput, cv::MORPH_HITMISS, P.get_E()[i]);
+		output_img = output_img + kerneloutput;
+	}
+
+	// return result
+	result_point_mask = output_img;
 }

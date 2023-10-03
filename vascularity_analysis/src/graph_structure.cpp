@@ -34,9 +34,9 @@ void vnode::push_tail(vnode* target) {
 	tail.push_back(target);
 };
 
-void vnode::disconnect(vnode* target) {
-	head.erase(remove(head.begin(), head.end(), target), head.end());
-	tail.erase(remove(tail.begin(), tail.end(), target), tail.end());
+void vnode::disconnect(vnode* parent, vnode* child) {
+	//head.erase(remove(head.begin(), head.end(), target), head.end());
+	//tail.erase(remove(tail.begin(), tail.end(), target), tail.end());
 };
 
 

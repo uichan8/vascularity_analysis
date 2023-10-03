@@ -22,9 +22,6 @@ int main() {
     // 벡터 선언
     vascularity example(image, mask);
 
-    //시각화
-    example.visualize();
-
 
     return 0;
 }

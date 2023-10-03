@@ -6,6 +6,20 @@
 #include <vector>
 
 //----------------------------------------------------------------------------------
+//---------------------------  width detection  ------------------------------------
+//----------------------------------------------------------------------------------
+struct Edge;
+
+Edge mask_witdth_detection(cv::Mat& seg_mask, std::vector<cv::Point2d> pts_arr);
+
+//----------------------------------------------------------------------------------
+//----------------------------  subpixel edge  -------------------------------------
+//----------------------------------------------------------------------------------
+double calculate_pixel(cv::Mat& img, cv::Point2d coor);
+
+std::vector<cv::Point2d> get_edge(cv::Mat& img, cv::Point2d center_coordinate, double center_tan, double vessel_radius);
+
+//----------------------------------------------------------------------------------
 //----------------------------------  center  --------------------------------------
 //----------------------------------------------------------------------------------
 int count_boundary_point(cv::Mat target_line_mask, cv::Point2d point);
@@ -32,7 +46,6 @@ void fit(std::vector<double> x, std::vector<double> y, std::vector<std::vector<d
 std::vector<double> get_lines(std::vector<std::vector<double>> poly_x, int sample_num = 10);
 
 std::vector<std::vector<double>> differentiate(std::vector<std::vector<double>> poly_array);
-
 
 //----------------------------------------------------------------------------------
 //------------------------------------  filtering  ---------------------------------
