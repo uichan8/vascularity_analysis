@@ -189,7 +189,6 @@ void vascularity::simple_vectorization() {
 	for (int i = 0; i < 3; i++) {
 		//bifur_skel 초기화
 		bifur_skel[i] = cv::Mat::zeros(mask.rows, mask.cols, CV_8UC1);
-
 		for (int j = 0; j < bifur_coor[i].size(); ++j) {
 			//bifur center 정보 입력
 			vbifur new_bifur;
@@ -243,6 +242,7 @@ void vascularity::simple_vectorization() {
 			else if (i == 2) a_graph.add_branch(new_branch);
 		}
 	}
+
 }
 
 void vascularity::where(const cv::Mat& skel, std::vector<cv::Point> &result) {

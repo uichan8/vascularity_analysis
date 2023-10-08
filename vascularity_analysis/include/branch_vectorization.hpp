@@ -5,10 +5,16 @@
 #include "graph_structure.hpp"
 #include <vector>
 
+struct Edge;
+//----------------------------------------------------------------------------------
+//---------------------------   vectorization   ------------------------------------
+//----------------------------------------------------------------------------------
+vbranch get_branch_vector(std::vector<cv::Point2d>& center_points, cv::Mat& mask, cv::Mat& fundus);
+
 //----------------------------------------------------------------------------------
 //---------------------------  width detection  ------------------------------------
 //----------------------------------------------------------------------------------
-struct Edge;
+
 
 Edge mask_witdth_detection(cv::Mat& seg_mask, std::vector<cv::Point2d> pts_arr);
 
@@ -35,8 +41,6 @@ std::vector<cv::Point2d> track_branch_centerline(cv::Point2d start_point, cv::Ma
 //----------------------------------------------------------------------------------
 //------------------------------------  spline  ------------------------------------
 //----------------------------------------------------------------------------------
-vbranch get_branch_vector(std::vector<cv::Point2d>& center_points, cv::Mat& mask, cv::Mat& fundus);
-
 std::vector<double> hermite_spline(double x1, double y1, double g1, double x2, double y2, double g2);
 
 double substitute(std::vector<double> coefficients, double x);

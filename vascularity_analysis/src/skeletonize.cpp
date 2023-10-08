@@ -347,14 +347,14 @@ void find_bifur_points(points P, const cv::Mat& skel_mask, cv::Mat& result_point
 	}
 
 	// T bifur
-	for (int i = 0; i < P.get_X().size(); i++) {
-		cv::morphologyEx(skel_mask, kerneloutput, cv::MORPH_HITMISS, P.get_X()[i]);
+	for (int i = 0; i < P.get_T().size(); i++) {
+		cv::morphologyEx(skel_mask, kerneloutput, cv::MORPH_HITMISS, P.get_T()[i]);
 		output_img = output_img + kerneloutput;
 	}
 
 	// Y bifur
-	for (int i = 0; i < P.get_X().size(); i++) {
-		cv::morphologyEx(skel_mask, kerneloutput, cv::MORPH_HITMISS, P.get_X()[i]);
+	for (int i = 0; i < P.get_Y().size(); i++) {
+		cv::morphologyEx(skel_mask, kerneloutput, cv::MORPH_HITMISS, P.get_Y()[i]);
 		output_img = output_img + kerneloutput;
 	}
 

@@ -27,8 +27,9 @@ vbranch get_branch_vector(std::vector<cv::Point2d>& center_points, cv::Mat& mask
 	result.set_end_points(center_points[0], center_points.back());
 
 	//예외처리
-	if (center_points.size() < 6)
+	if (center_points.size() < 6) {
 		return result;
+	}
 
 	// 마스크 기반 width 계산
 	Edge edge = mask_witdth_detection(mask, center_points);
