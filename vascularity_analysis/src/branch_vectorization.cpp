@@ -21,15 +21,18 @@ struct Edge {
 //----------------------------------------------------------------------------------
 //---------------------------   vectorization   ------------------------------------
 //----------------------------------------------------------------------------------
-vbranch get_branch_vector(std::vector<cv::Point2d>& center_points, cv::Mat& mask, cv::Mat& blur_fundus) {
+vbranch get_branch_vector(std::vector<cv::Point2d>& center_points, cv::Mat& mask, cv::Mat& fundus) {
 	//처음점 끝점 추가
 	vbranch result;
 	result.set_end_points(center_points[0], center_points.back());
 
 	//예외처리
-	if (center_points.size() < 6)
+	if (center_points.size() < 3)
 		return result;
 
+	if (fundus.channels() != 1)
+		throw std::runtime_error("The channel of fundus to vectorize the branch must be 1");
+	
 	// 마스크 기반 width 계산
 	Edge edge = mask_witdth_detection(mask, center_points);
 
@@ -39,10 +42,10 @@ vbranch get_branch_vector(std::vector<cv::Point2d>& center_points, cv::Mat& mask
 	vector<double> edge_y2 = edge.edge_y2;
 
 	//sampling
-	edge_x = simple_sampling(edge_x, 2);
-	edge_y = simple_sampling(edge_y, 2);
-	edge_x2 = simple_sampling(edge_x2, 2);
-	edge_y2 = simple_sampling(edge_y2, 2);
+	edge_x = simple_sampling(edge_x, 3);
+	edge_y = simple_sampling(edge_y, 3);
+	edge_x2 = simple_sampling(edge_x2, 3);
+	edge_y2 = simple_sampling(edge_y2, 3);
 
 	vector<double> x_cen(edge_x.size());
 	vector<double> y_cen(edge_x.size());
@@ -54,21 +57,21 @@ vbranch get_branch_vector(std::vector<cv::Point2d>& center_points, cv::Mat& mask
 		x_cen[i] = (edge_x[i] + edge_x2[i]) / 2.0;
 		y_cen[i] = (edge_y[i] + edge_y2[i]) / 2.0;
 		center_tan[i] = (edge_y[i] - edge_y2[i]) / (edge_x[i] - edge_x2[i] + 1e-12);
-		vessel_w[i] = sqrt(pow((edge_y[i] - edge_y2[i]), 2) + pow((edge_x[i] - edge_x2[i]), 2)) / 2.0;
+		vessel_w[i] = sqrt(pow((edge_y[i] - edge_y2[i]), 2) + pow((edge_x[i] - edge_x2[i]), 2))/2.0;
 	}
 
 	// subpixel localization
 	vector<cv::Point2d> sub;
 	for (size_t i = 0; i < x_cen.size(); i++) {
 		vector<cv::Point2d> edge_coor;
-		edge_coor = get_edge(blur_fundus, cv::Point2d(x_cen[i], y_cen[i]), center_tan[i], vessel_w[i]);
+		edge_coor = get_edge(fundus, cv::Point2d(x_cen[i], y_cen[i]), center_tan[i], vessel_w[i]);
 
 		sub.push_back(edge_coor[0]);
 		sub.push_back(edge_coor[1]);
 
 		x_cen[i] = (edge_coor[0].x + edge_coor[1].x) / 2;
 		y_cen[i] = (edge_coor[0].y + edge_coor[1].y) / 2;
-		r.push_back(sqrt(pow((edge_coor[0].x - edge_coor[1].x), 2) + pow((edge_coor[0].y - edge_coor[1].y), 2)) / 2);
+		r.push_back(sqrt(pow((edge_coor[0].x - edge_coor[1].x), 2) + pow((edge_coor[0].y - edge_coor[1].y), 2)) / 2.0);
 	}
 
 	int sampling_num = 1;
@@ -237,8 +240,9 @@ vector<cv::Point2d> get_edge(cv::Mat& img, cv::Point2d center_coordinate, double
 	Returns:
 		tuple or ndarray: The coordinates of the endpoints of the branch segment or the edge profile, depending on the value of the "profile" argument.
 	*/
+
 	const double edge_width = 3;
-	const int sampling_num = 50;
+	const int sampling_num = 20;
 	const int P = 2; //power_factor
 
 	//1. edge_profile 가져오기
@@ -266,6 +270,7 @@ vector<cv::Point2d> get_edge(cv::Mat& img, cv::Point2d center_coordinate, double
 	//2. gradient 및 weight계산
 	long double w1, w2, w1_s = 0, w2_s = 0;
 	long double l1 = 0, l2 = 0;
+
 	//3. 질량 중심 구하기
 	for (int i = 0; i < sampling_num - 1; i++) {
 		w1 = pow((edge_profile_1[i + 1] - edge_profile_1[i]), P);
@@ -274,6 +279,15 @@ vector<cv::Point2d> get_edge(cv::Mat& img, cv::Point2d center_coordinate, double
 		l1 += (i + 0.5) * edge_width / sampling_num * w1;
 		l2 += (i + 0.5) * edge_width / sampling_num * w2;
 	}
+
+	if (w1_s == 0 || w2_s == 0 || 1) {
+		cv::Point2d coor1(center_coordinate.x + branch_radius * cos(angle), center_coordinate.y + branch_radius * sin(angle));
+		cv::Point2d coor2(center_coordinate.x - branch_radius * cos(angle), center_coordinate.y - branch_radius * sin(angle));
+		vector<cv::Point2d> edge_coor = { coor1, coor2 };
+		return edge_coor;
+	}
+		
+
 	l1 /= w1_s;   l2 /= w2_s;
 
 	//원래 좌표로 환산
@@ -291,6 +305,23 @@ vector<cv::Point2d> get_edge(cv::Mat& img, cv::Point2d center_coordinate, double
 //----------------------------------------------------------------------------------
 //----------------------------------  center  --------------------------------------
 //----------------------------------------------------------------------------------
+Neighbors::Neighbors(cv::Point2d point) {
+	vector<cv::Point2d> neighbors = {
+			cv::Point2d(point.x - 1, point.y),
+			cv::Point2d(point.x + 1, point.y),
+			cv::Point2d(point.x, point.y - 1),
+			cv::Point2d(point.x, point.y + 1),
+			cv::Point2d(point.x - 1, point.y - 1),
+			cv::Point2d(point.x - 1, point.y + 1),
+			cv::Point2d(point.x + 1, point.y - 1),
+			cv::Point2d(point.x + 1, point.y + 1),
+	};
+}
+
+vector<cv::Point2d> Neighbors::get_neighbors() {
+	return neighbors;
+}
+
 int count_boundary_point(cv::Mat target_line_mask, cv::Point2d point) {
 	int num_count = 0;
 
@@ -483,13 +514,13 @@ void fit(vector<double> x, vector<double> y, vector<vector<double>>& poly_x, vec
 	return;
 }
 
-vector<double> get_lines(vector<vector<double>> poly_x, int sample_num) {
+vector<double> get_lines(vector<vector<double>> poly, int sample_num) {
 	vector<double> result_x;
 	double step = 1.0 / sample_num;
 
-	for (int i = 0; i < poly_x.size(); i++) {
+	for (int i = 0; i < poly.size(); i++) {
 		for (int j = 0; j < sample_num; j++) {
-			double x = substitute(poly_x[i], j * step);
+			double x = substitute(poly[i], j * step);
 			result_x.push_back(x);
 		}
 	}

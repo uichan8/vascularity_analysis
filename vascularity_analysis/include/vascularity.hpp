@@ -38,6 +38,7 @@ public:
 
     //기타 메소드
     void where(const cv::Mat& skel, std::vector<cv::Point> &result);
+    void visualize(int sampling_dis = 1);
 };
 
 #endif

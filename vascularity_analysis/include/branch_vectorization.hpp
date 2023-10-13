@@ -28,6 +28,17 @@ std::vector<cv::Point2d> get_edge(cv::Mat& img, cv::Point2d center_coordinate, d
 //----------------------------------------------------------------------------------
 //----------------------------------  center  --------------------------------------
 //----------------------------------------------------------------------------------
+class Neighbors {
+private:
+	std::vector<cv::Point2d> neighbors;
+public:
+	//constructor
+	Neighbors(cv::Point2d point);
+
+	//getter
+	std::vector<cv::Point2d> get_neighbors();
+};
+
 int count_boundary_point(cv::Mat target_line_mask, cv::Point2d point);
 
 cv::Point2d find_end_point(cv::Mat target_line_mask);

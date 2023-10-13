@@ -2,6 +2,8 @@
 #include <iostream>
 #include <queue>
 #include <algorithm>
+#include <cmath>
+#include <numeric>
 
 #include "opencv2/opencv.hpp"
 #include "vascularity.hpp"
@@ -148,8 +150,11 @@ void vascularity::make_graph() {
 void vascularity::simple_vectorization() {
 	//체널 분리
 	cv::Mat mask_channels[3];
+	cv::Mat fundus_channels[3];
 	cv::Mat mask_for_skel[3];
+	
 	cv::split(mask, mask_channels);
+	cv::split(fundus, fundus_channels);
 	cv::split(mask, mask_for_skel);
 
 	//닫힘 연산 스켈레톤에서 노이즈한 구멍들을 제거하기 위한 연산
@@ -226,6 +231,9 @@ void vascularity::simple_vectorization() {
 	}
 
 	//branch vectorization
+	cv::Mat blur_fundus = fundus_channels[1];
+	cv::GaussianBlur(blur_fundus, blur_fundus, cv::Size(5, 5), 0);
+
 	for (int i = 0; i < 3; i++) {
 		if (i == 1) continue;
 
@@ -237,12 +245,99 @@ void vascularity::simple_vectorization() {
 		for (int j = 1; j < retvals; j++) {
 			cv::Mat target_line = (labels == j);
 			vector<cv::Point2d> sorted_points = sort_points(target_line);
-			vbranch new_branch = get_branch_vector(sorted_points, mask, fundus);
+			vbranch new_branch = get_branch_vector(sorted_points, mask, blur_fundus);
 
 			if (i == 0) v_graph.add_branch(new_branch);
 			else if (i == 2) a_graph.add_branch(new_branch);
 		}
 	}
+}
+
+void vascularity::visualize(int sampling_dis) {
+	//prepare data
+	cv::Mat result = fundus.clone();
+	cv::Mat result_split[3];
+	cv::split(result, result_split);
+
+	//visualze
+	for (int i = 0; i < 3; i++) {
+		vgraph target_graph;
+		if (i == 1) continue;
+		else if (i == 0) target_graph = v_graph;
+		else if (i == 2) target_graph = a_graph;
+
+		//bifur visualziation
+		for (int j = 0; j < target_graph.get_bifur().size(); j++) {
+			//bifur 정보 가져오기
+			vbifur target_bifur = target_graph.get_bifur()[j];
+			cv::Point center = target_bifur.get_center_coor();
+			cv::Mat bifur_mask_seg = target_bifur.get_vbifur_mask();
+			int circle_r = bifur_mask_seg.rows / 2;
+
+			//이미지에 추가
+			cv::Rect roi(center.x - circle_r, center.y - circle_r, bifur_mask_seg.rows, bifur_mask_seg.rows);
+			cv::Mat target_patch = result_split[i](roi);
+			target_patch = cv::max(target_patch, bifur_mask_seg);
+
+			target_patch.copyTo(target_patch);
+		}
+
+		//branch visualization
+		for (int j = 0; j < target_graph.get_branch().size(); j++) {
+			//branch 정보 가져오기
+			vbranch target_branch = target_graph.get_branch()[j];
+			std::vector<std::vector<double>> poly_x = target_branch.get_poly_x();
+			std::vector<std::vector<double>> poly_y = target_branch.get_poly_y();
+			std::vector<std::vector<double>> poly_r = target_branch.get_poly_r();
+
+			vector<double> x = get_lines(poly_x, sampling_dis);
+			vector<double> y = get_lines(poly_y, sampling_dis);
+			vector<double> r = get_lines(poly_r, sampling_dis);
+			
+			vector<vector<double>> diff_poly_x = differentiate(poly_x);
+			vector<vector<double>> diff_poly_y = differentiate(poly_y);
+			vector<double> diff_x = get_lines(diff_poly_x, sampling_dis);
+			vector<double> diff_y = get_lines(diff_poly_y, sampling_dis);
+			
+			vector<double> center_tan;
+			for (int k = 0; k < diff_x.size(); k++) 
+				center_tan.push_back(diff_y[k] / (diff_x[k] + 1e-9));
+
+			delete_outliers(x, y, r, center_tan, 0.8);
+			
+			//이미지에 추가
+			for (int k = 0; k < x.size(); k++) {
+				int center_x = int(x[k]), center_y = int(y[k]);
+
+				if (center_x > 0 && center_y > 0 && center_x < result.cols && center_y < result.rows) {
+					result_split[1].at<uchar>(center_y, center_x) = 255;
+					result_split[i].at<uchar>(center_y, center_x) = 255;
+				}
+
+
+				//side
+				double angle = atan(center_tan[k]) + M_PI/2;
+				int rt_x = int(x[k] + (r[k] * cos(angle))), lb_x = int(x[k] - (r[k] * cos(angle)));
+				int rt_y = int(y[k] + (r[k] * sin(angle))), lb_y = int(y[k] - (r[k] * sin(angle)));
+
+				//int rt_x = int(x[k] + (3 * cos(angle))), lb_x = int(x[k] - (3 * cos(angle)));
+				//int rt_y = int(y[k] + (3 * sin(angle))), lb_y = int(y[k] - (3 * sin(angle)));
+
+				if (rt_x > 0 && rt_y > 0 && rt_x < result.cols && rt_y < result.rows) 
+					result_split[i].at<uchar>(rt_y, rt_x) = 255;
+
+				if (lb_x > 0 && lb_y > 0 && lb_x < result.cols && lb_y < result.rows) 
+					result_split[i].at<uchar>(lb_y, lb_x) = 255;
+
+			}
+		}
+	}
+
+	cv::merge(result_split, 3, result);
+
+	cv::imwrite("vec.bmp", result);
+	cv::imshow("result", result);
+	cv::waitKey(0);
 }
 
 void vascularity::where(const cv::Mat& skel, std::vector<cv::Point> &result) {
