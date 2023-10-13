@@ -12,8 +12,8 @@ using namespace cv;
 
 int main() {
     // 경로 긁어오기
-    string mask_path = "C:/Users/uicha/Desktop/vascularity_analysis_cpp/data/mask/001_mask.png";
-    string img_path = "C:/Users/uicha/Desktop/vascularity_analysis_cpp/data/img/001_img.png";
+    string mask_path = "C:/Users/uicha/Desktop/vascularity_analysis_cpp/data/mask/017_mask.png";
+    string img_path = "C:/Users/uicha/Desktop/vascularity_analysis_cpp/data/img/017_img.png";
 
     // 이미지 파일 읽어오기
     Mat mask = imread(mask_path);

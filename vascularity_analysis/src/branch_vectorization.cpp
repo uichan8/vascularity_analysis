@@ -232,7 +232,7 @@ vector<cv::Point2d> get_edge(cv::Mat& img, cv::Point2d center_coordinate, double
 		img (ndarray): Image data.
 		center_coordinate (tuple): The center coordinates of the branch.
 		center_tan (float): The tangent of the branch at its center.
-		branch_radius (float): The radius of the branch.
+		bran ch_radius (float): The radius of the branch.
 		sampling_num (int, optional): The number of samples used to calculate the edge profile. Defaults to 10.
 		power_factor (int, optional): The exponent used to determine the intensity of the edge profile. Defaults to 2.
 		profile (bool, optional): If True, returns the edge profile; otherwise, returns the endpoint coordinates. Defaults to False.
@@ -241,8 +241,8 @@ vector<cv::Point2d> get_edge(cv::Mat& img, cv::Point2d center_coordinate, double
 		tuple or ndarray: The coordinates of the endpoints of the branch segment or the edge profile, depending on the value of the "profile" argument.
 	*/
 
-	const double edge_width = 3;
-	const int sampling_num = 20;
+	const double edge_width = max(1.42,branch_radius*0.8);
+	const int sampling_num = 100;
 	const int P = 2; //power_factor
 
 	//1. edge_profile 가져오기
@@ -280,7 +280,7 @@ vector<cv::Point2d> get_edge(cv::Mat& img, cv::Point2d center_coordinate, double
 		l2 += (i + 0.5) * edge_width / sampling_num * w2;
 	}
 
-	if (w1_s == 0 || w2_s == 0 || 1) {
+	if (w1_s == 0 || w2_s == 0) {
 		cv::Point2d coor1(center_coordinate.x + branch_radius * cos(angle), center_coordinate.y + branch_radius * sin(angle));
 		cv::Point2d coor2(center_coordinate.x - branch_radius * cos(angle), center_coordinate.y - branch_radius * sin(angle));
 		vector<cv::Point2d> edge_coor = { coor1, coor2 };

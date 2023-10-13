@@ -245,7 +245,7 @@ void vascularity::simple_vectorization() {
 		for (int j = 1; j < retvals; j++) {
 			cv::Mat target_line = (labels == j);
 			vector<cv::Point2d> sorted_points = sort_points(target_line);
-			vbranch new_branch = get_branch_vector(sorted_points, mask, blur_fundus);
+			vbranch new_branch = get_branch_vector(sorted_points, mask_channels[i], blur_fundus);
 
 			if (i == 0) v_graph.add_branch(new_branch);
 			else if (i == 2) a_graph.add_branch(new_branch);
@@ -303,7 +303,7 @@ void vascularity::visualize(int sampling_dis) {
 			for (int k = 0; k < diff_x.size(); k++) 
 				center_tan.push_back(diff_y[k] / (diff_x[k] + 1e-9));
 
-			delete_outliers(x, y, r, center_tan, 0.8);
+			//delete_outliers(x, y, r, center_tan, 1);
 			
 			//이미지에 추가
 			for (int k = 0; k < x.size(); k++) {
@@ -319,9 +319,6 @@ void vascularity::visualize(int sampling_dis) {
 				double angle = atan(center_tan[k]) + M_PI/2;
 				int rt_x = int(x[k] + (r[k] * cos(angle))), lb_x = int(x[k] - (r[k] * cos(angle)));
 				int rt_y = int(y[k] + (r[k] * sin(angle))), lb_y = int(y[k] - (r[k] * sin(angle)));
-
-				//int rt_x = int(x[k] + (3 * cos(angle))), lb_x = int(x[k] - (3 * cos(angle)));
-				//int rt_y = int(y[k] + (3 * sin(angle))), lb_y = int(y[k] - (3 * sin(angle)));
 
 				if (rt_x > 0 && rt_y > 0 && rt_x < result.cols && rt_y < result.rows) 
 					result_split[i].at<uchar>(rt_y, rt_x) = 255;
@@ -349,3 +346,4 @@ void vascularity::where(const cv::Mat& skel, std::vector<cv::Point> &result) {
 		}
 	}
 }
+
