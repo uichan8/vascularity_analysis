@@ -305,20 +305,18 @@ vector<cv::Point2d> get_edge(cv::Mat& img, cv::Point2d center_coordinate, double
 //----------------------------------------------------------------------------------
 //----------------------------------  center  --------------------------------------
 //----------------------------------------------------------------------------------
-Neighbors::Neighbors(cv::Point2d point) {
+vector<cv::Point2d> get_neighbors(cv::Point point) {
 	vector<cv::Point2d> neighbors = {
-			cv::Point2d(point.x - 1, point.y),
-			cv::Point2d(point.x + 1, point.y),
-			cv::Point2d(point.x, point.y - 1),
-			cv::Point2d(point.x, point.y + 1),
-			cv::Point2d(point.x - 1, point.y - 1),
-			cv::Point2d(point.x - 1, point.y + 1),
-			cv::Point2d(point.x + 1, point.y - 1),
-			cv::Point2d(point.x + 1, point.y + 1),
+				cv::Point2d(point.x - 1, point.y),
+				cv::Point2d(point.x + 1, point.y),
+				cv::Point2d(point.x, point.y - 1),
+				cv::Point2d(point.x, point.y + 1),
+				cv::Point2d(point.x - 1, point.y - 1),
+				cv::Point2d(point.x - 1, point.y + 1),
+				cv::Point2d(point.x + 1, point.y - 1),
+				cv::Point2d(point.x + 1, point.y + 1),
 	};
-}
 
-vector<cv::Point2d> Neighbors::get_neighbors() {
 	return neighbors;
 }
 
@@ -345,28 +343,15 @@ cv::Point2d find_end_point(cv::Mat target_line_mask) {
 		for (int j = 0; j < target_line_mask.cols; j++) {
 			if (target_line_mask.at<uchar>(i, j)) {
 				point = cv::Point2d(j, i);
-				//break;
 			}
 		}
-		//if (point.x != -1 && point.y != -1)
-			//break;
 	}
 
 
 	while (count_boundary_point(target_line_mask, point) != 1) {
 		target_line_mask.at<uchar>(point.y, point.x) = 0;
 
-		vector<cv::Point2d> neighbors = {
-			cv::Point2d(point.x - 1, point.y),
-			cv::Point2d(point.x + 1, point.y),
-			cv::Point2d(point.x, point.y - 1),
-			cv::Point2d(point.x, point.y + 1),
-			cv::Point2d(point.x - 1, point.y - 1),
-			cv::Point2d(point.x - 1, point.y + 1),
-			cv::Point2d(point.x + 1, point.y - 1),
-			cv::Point2d(point.x + 1, point.y + 1),
-		};
-
+		vector<cv::Point2d> neighbors = get_neighbors(point);
 		for (const auto& neighbor : neighbors) {
 			if (target_line_mask.at<uchar>(neighbor.y, neighbor.x)) {
 				point = neighbor;
@@ -384,18 +369,7 @@ vector<cv::Point2d> find_track_path(cv::Mat target_line_mask, cv::Point2d point)
 		target_line_mask.at<uchar>(point.y, point.x) = 0;
 		path.push_back(point);
 
-
-		vector<cv::Point2d> neighbors = {
-			cv::Point2d(point.x - 1, point.y),
-			cv::Point2d(point.x + 1, point.y),
-			cv::Point2d(point.x, point.y - 1),
-			cv::Point2d(point.x, point.y + 1),
-			cv::Point2d(point.x - 1, point.y - 1),
-			cv::Point2d(point.x - 1, point.y + 1),
-			cv::Point2d(point.x + 1, point.y - 1),
-			cv::Point2d(point.x + 1, point.y + 1),
-		};
-
+		vector<cv::Point2d> neighbors = get_neighbors(point);
 		for (const auto& neighbor : neighbors) {
 			if (target_line_mask.at<uchar>(neighbor.y, neighbor.x)) {
 				point = neighbor;
@@ -431,16 +405,7 @@ vector<cv::Point2d> track_branch_centerline(cv::Point2d start_point, cv::Mat& sk
 	while (!bifur_center_map.at<uchar>(target_point.y, target_point.x)) {
 		branch_line.push_back(target_point);
 		skel.at<cv::Vec3b>(target_point.y, target_point.x) = 0;
-		vector<cv::Point2d> neighbors = {
-			cv::Point2d(target_point.x + 1, target_point.y),
-			cv::Point2d(target_point.x, target_point.y - 1),
-			cv::Point2d(target_point.x, target_point.y + 1),
-			cv::Point2d(target_point.x - 1, target_point.y),
-			cv::Point2d(target_point.x - 1, target_point.y - 1),
-			cv::Point2d(target_point.x - 1, target_point.y + 1),
-			cv::Point2d(target_point.x + 1, target_point.y - 1),
-			cv::Point2d(target_point.x + 1, target_point.y + 1)
-		};
+		vector<cv::Point2d> neighbors = get_neighbors(target_point);
 
 		for (int i = 0; i < 8; i++) {
 			if (skel.at<uchar>(neighbors[i].y, neighbors[i].x)) {
