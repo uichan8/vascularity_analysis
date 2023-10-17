@@ -1,5 +1,6 @@
 #include "opencv2/opencv.hpp"
 #include "bifur_vectorization.hpp"
+#include "graph_structure.hpp"
 
 #include <iostream>
 #include <vector>
@@ -9,7 +10,28 @@
 #include <algorithm>
 
 #define M_PI 3.14159265358979323846
+Circle C(19);
 using namespace std;
+
+//------------------------------------------------------------------------------------------------
+//-----------------------------------   vectorization   ------------------------------------------
+//------------------------------------------------------------------------------------------------
+
+vbifur get_bifur_vector(cv::Point center, cv::Mat &mask){
+	vbifur new_bifur;
+	
+	//bifur center 정보 입력
+	int x = center.x;
+	int y = center.y;
+	new_bifur.set_center_coor(center);
+
+	//bifur_mask 정보 입력
+	cv::Mat bifur_mask_seg;
+	find_bifur_mask(mask, x, y, C, bifur_mask_seg);
+	new_bifur.set_vbifur_mask(bifur_mask_seg);
+
+	return new_bifur;
+}
 
 //------------------------------------------------------------------------------------------------
 //-----------------------------------   class Circle   -------------------------------------------

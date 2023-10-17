@@ -196,22 +196,18 @@ void vascularity::simple_vectorization() {
 		bifur_skel[i] = cv::Mat::zeros(mask.rows, mask.cols, CV_8UC1);
 
 		for (int j = 0; j < bifur_coor[i].size(); ++j) {
-			//bifur center 정보 입력
+			//bifur vectorization
 			vbifur new_bifur;
-			int x = bifur_coor[i][j].x;
-			int y = bifur_coor[i][j].y;
-			new_bifur.set_center_coor(bifur_coor[i][j]);
-
-			//bifur_mask 정보 입력
-			cv::Mat bifur_mask_seg;
-			find_bifur_mask(mask_channels[i], x, y, C, bifur_mask_seg);
-			new_bifur.set_vbifur_mask(bifur_mask_seg);
+			new_bifur = get_bifur_vector(bifur_coor[i][j], mask_channels[i]);
 
 			//그래프에 마스크 정보 추가
 			if (i == 0) v_graph.add_bifur(new_bifur);
 			else if (i == 2) a_graph.add_bifur(new_bifur);
 
 			//branch_에 해당하는 skel부분 계산
+			int x = bifur_coor[i][j].x;
+			int y = bifur_coor[i][j].y;
+			cv::Mat bifur_mask_seg = new_bifur.get_vbifur_mask();
 			int circle_r = bifur_mask_seg.rows / 2;
 			int circle_idx = circle_r / 2;
 			cv::Rect roi(x - circle_r, y - circle_r, bifur_mask_seg.rows, bifur_mask_seg.rows);
