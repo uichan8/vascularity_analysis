@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <cmath>
 #include <numeric>
+#include <iostream>
+#include <fstream>
 
 #include "opencv2/opencv.hpp"
 #include "vascularity.hpp"
@@ -12,10 +14,12 @@
 #include "branch_vectorization.hpp"
 #include "bifur_vectorization.hpp"
 #include "skeletonize.hpp"
+#include "json.h"
 
 #define M_PI 3.14159265358979323846
 
 using namespace std;
+using namespace Json;
 
 vascularity::vascularity(cv::Mat img, cv::Mat vmask) {
 	fundus = img;
@@ -191,6 +195,7 @@ void vascularity::simple_vectorization() {
 	//bifur vectorization
 	Circle C(19);
 	cv::Mat bifur_skel[3];
+	int id = 0;
 	for (int i = 0; i < 3; i++) {
 		//bifur_skel 초기화
 		bifur_skel[i] = cv::Mat::zeros(mask.rows, mask.cols, CV_8UC1);
@@ -198,7 +203,8 @@ void vascularity::simple_vectorization() {
 		for (int j = 0; j < bifur_coor[i].size(); ++j) {
 			//bifur vectorization
 			vbifur new_bifur;
-			new_bifur = get_bifur_vector(bifur_coor[i][j], mask_channels[i]);
+			new_bifur = get_bifur_vector(id, bifur_coor[i][j], mask_channels[i]);
+			id++;
 
 			//그래프에 마스크 정보 추가
 			if (i == 0) v_graph.add_bifur(new_bifur);
@@ -229,10 +235,9 @@ void vascularity::simple_vectorization() {
 	//branch vectorization
 	cv::Mat blur_fundus = fundus_channels[1];
 	cv::GaussianBlur(blur_fundus, blur_fundus, cv::Size(5, 5), 0);
-
+	id = 0;
 	for (int i = 0; i < 3; i++) {
 		if (i == 1) continue;
-
 		//connectedComponents
 		cv::Mat labels, stats, cent;
 		int retvals = cv::connectedComponentsWithStats(branch_skel[i], labels, stats, cent);
@@ -241,7 +246,8 @@ void vascularity::simple_vectorization() {
 		for (int j = 1; j < retvals; j++) {
 			cv::Mat target_line = (labels == j);
 			vector<cv::Point2d> sorted_points = sort_points(target_line);
-			vbranch new_branch = get_branch_vector(sorted_points, mask_channels[i], blur_fundus);
+			vbranch new_branch = get_branch_vector(id, sorted_points, mask_channels[i], blur_fundus); 
+			id++;
 
 			if (i == 0) v_graph.add_branch(new_branch);
 			else if (i == 2) a_graph.add_branch(new_branch);
@@ -249,7 +255,211 @@ void vascularity::simple_vectorization() {
 	}
 }
 
-void vascularity::visualize(int sampling_dis) {
+void vascularity::where(const cv::Mat& skel, std::vector<cv::Point>& result) {
+	for (int y = 0; y < skel.rows; ++y) {
+		for (int x = 0; x < skel.cols; ++x) {
+			if (skel.at<uchar>(y, x) > 0) {
+				result.emplace_back(x, y);
+			}
+		}
+	}
+}
+
+bool vascularity::write(std::string path) {
+	//정보 장입, 하위 범주부터 삽입
+	Json::Value a_bifur, v_bifur, a_branch, v_branch;
+
+	std::vector<vbranch> a_br = a_graph.get_branch();
+	for (int i = 0; i < a_br.size(); i++) {
+		vbranch target = a_br[i];
+		Json::Value br;
+
+		br["number"] = target.get_ID();
+		if (target.get_head().size() == 0)
+			br["head"].append(-1);
+		//이 부분 나중에 그래프를 만든후에 추가해야함
+		
+		if (target.get_tail().size() == 0)
+			br["tail"].append(-1);
+		//이 부분 나중에 그래프를 만든 후에 추가해야함
+		
+		if (target.get_poly_x().size() == 0)
+			br["x"].append(-1);
+		else {
+			for (const vector<double>& item : target.get_poly_x()) {
+				Json::Value poly;
+
+				for (int j = 0; j < 4; j++)
+					poly.append(item[j]);
+				
+				br["x"].append(poly);
+			}
+		}
+
+		if (target.get_poly_y().size() == 0)
+			br["y"].append(-1);
+		else {
+			for (const vector<double>& item : target.get_poly_y()) {
+				Json::Value poly;
+
+				for (int j = 0; j < 4; j++)
+					poly.append(item[j]);
+				
+				br["y"].append(poly);
+			}
+		}
+
+		if (target.get_poly_r().size() == 0)
+			br["r"].append(-1);
+		else {
+			for (const vector<double>& item : target.get_poly_r()) {
+				Json::Value poly;
+
+				for (int j = 0; j < 4; j++)
+					poly.append(item[j]);
+
+				br["r"].append(poly);
+			}
+		}
+
+		a_branch.append(br);
+	}
+
+	std::vector<vbranch> v_br = v_graph.get_branch();
+	for (int i = 0; i < v_br.size(); i++) {
+		vbranch target = v_br[i];
+		Json::Value br;
+
+		br["number"] = target.get_ID();
+		if (target.get_head().size() == 0)
+			br["head"].append(-1);
+		//이 부분 나중에 그래프를 만든후에 추가해야함
+
+		if (target.get_tail().size() == 0)
+			br["tail"].append(-1);
+		//이 부분 나중에 그래프를 만든 후에 추가해야함
+
+		if (target.get_poly_x().size() == 0)
+			br["x"].append(-1);
+		else {
+			for (const vector<double>& item : target.get_poly_x()) {
+				Json::Value poly;
+
+				for (int j = 0; j < 4; j++)
+					poly.append(item[j]);
+
+				br["x"].append(poly);
+			}
+		}
+
+		if (target.get_poly_y().size() == 0)
+			br["y"].append(-1);
+		else {
+			for (const vector<double>& item : target.get_poly_y()) {
+				Json::Value poly;
+
+				for (int j = 0; j < 4; j++)
+					poly.append(item[j]);
+
+				br["y"].append(poly);
+			}
+		}
+
+		if (target.get_poly_r().size() == 0)
+			br["r"].append(-1);
+		else {
+			for (const vector<double>& item : target.get_poly_r()) {
+				Json::Value poly;
+
+				for (int j = 0; j < 4; j++)
+					poly.append(item[j]);
+
+				br["r"].append(poly);
+			}
+		}
+
+		v_branch.append(br);
+	}
+
+	std::vector<vbifur> a_bi = a_graph.get_bifur();
+	for (int i = 0; i < a_bi.size(); i++) {
+		vbifur target = a_bi[i];
+		Json::Value bi;
+
+		bi["number"] = target.get_ID();
+		if (target.get_head().size() == 0)
+			bi["head"].append(-1);
+		//이 부분 나중에 그래프를 만든후에 추가해야함
+
+		if (target.get_tail().size() == 0)
+			bi["tail"].append(-1);
+		//이 부분 나중에 그래프를 만든 후에 추가해야함
+
+		bi["center"].append(target.get_center_coor().x);
+		bi["center"].append(target.get_center_coor().y);
+
+		for (int j = 0; j < target.get_vbifur_mask().rows; ++j) {
+			for (int k = 0; k < target.get_vbifur_mask().cols; ++k) {
+				bi["mask"].append(target.get_vbifur_mask().at<unsigned char>(j, k));
+			}
+		}
+		a_bifur.append(bi);
+	}
+
+	std::vector<vbifur> v_bi = v_graph.get_bifur();
+	for (int i = 0; i < v_bi.size(); i++) {
+		vbifur target = v_bi[i];
+		Json::Value bi;
+
+		bi["number"] = target.get_ID();
+		if (target.get_head().size() == 0)
+			bi["head"].append(-1);
+		//이 부분 나중에 그래프를 만든후에 추가해야함
+
+		if (target.get_tail().size() == 0)
+			bi["tail"].append(-1);
+		//이 부분 나중에 그래프를 만든 후에 추가해야함
+
+		bi["center"].append(target.get_center_coor().x);
+		bi["center"].append(target.get_center_coor().y);
+
+		for (int j = 0; j < target.get_vbifur_mask().rows; ++j) {
+			for (int k = 0; k < target.get_vbifur_mask().cols; ++k) {
+				bi["mask"].append(target.get_vbifur_mask().at<unsigned char>(j, k));
+			}
+		}
+		v_bifur.append(bi);
+	}
+
+	// artery, vein - bifur, branch
+	Json::Value artery, vein;
+
+	artery["bifur"] = a_bifur;
+	artery["branch"] = a_branch;
+
+	vein["bifur"] = v_bifur;
+	vein["branch"] = v_branch;
+
+	// root - artery, vein
+	Json::Value root;
+
+	root["artery"] = artery;
+	root["vein"] = vein;
+
+
+	//파일 생성
+	ofstream outputFile(path);
+
+	//내용 저장
+	StreamWriterBuilder writer;
+	string jsonString = writeString(writer, root);
+	outputFile << jsonString;
+	outputFile.close();
+
+	return 1;
+}
+
+void vascularity::visualize(int sampling_dis, bool save) {
 	//prepare data
 	cv::Mat result = fundus.clone();
 	cv::Mat result_split[3];
@@ -328,18 +538,7 @@ void vascularity::visualize(int sampling_dis) {
 
 	cv::merge(result_split, 3, result);
 
-	cv::imwrite("vec.bmp", result);
+	if (save) cv::imwrite("vec.bmp", result);
 	cv::imshow("result", result);
 	cv::waitKey(0);
 }
-
-void vascularity::where(const cv::Mat& skel, std::vector<cv::Point> &result) {
-	for (int y = 0; y < skel.rows; ++y) {
-		for (int x = 0; x < skel.cols; ++x) {
-			if (skel.at<uchar>(y, x) > 0) {
-				result.emplace_back(x, y); 
-			}
-		}
-	}
-}
-

@@ -5,10 +5,10 @@
 
 #include "vascularity.hpp"
 #include "skeletonize.hpp"
+#include "json.h"
 
 using namespace std;
 using namespace cv;
-
 
 int main() {
     // 경로 긁어오기
@@ -23,7 +23,7 @@ int main() {
     vascularity example(image, mask);
 
     example.visualize();
-
+    example.write();
 
     return 0;
 }

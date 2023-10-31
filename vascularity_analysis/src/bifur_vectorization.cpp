@@ -17,10 +17,11 @@ using namespace std;
 //-----------------------------------   vectorization   ------------------------------------------
 //------------------------------------------------------------------------------------------------
 
-vbifur get_bifur_vector(cv::Point center, cv::Mat &mask){
+vbifur get_bifur_vector(int id, cv::Point center, cv::Mat &mask){
 	vbifur new_bifur;
 	
 	//bifur center 정보 입력
+	new_bifur.set_ID(id);
 	int x = center.x;
 	int y = center.y;
 	new_bifur.set_center_coor(center);
@@ -31,6 +32,7 @@ vbifur get_bifur_vector(cv::Point center, cv::Mat &mask){
 	new_bifur.set_vbifur_mask(bifur_mask_seg);
 
 	return new_bifur;
+
 }
 
 //------------------------------------------------------------------------------------------------

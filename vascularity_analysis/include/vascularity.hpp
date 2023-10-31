@@ -2,6 +2,7 @@
 #define _vascularity
 
 #include <vector>
+#include <string>
 
 #include "opencv2/opencv.hpp"
 #include "graph_structure.hpp"
@@ -32,13 +33,14 @@ public:
     //생성자
     vascularity(cv::Mat img, cv::Mat vmask);
 
-    //그래프 관련 메소드
+    //vecterization
     void make_graph();
-    void simple_vectorization();
+    void simple_vectorization(); //연결성이 없음 구 버전
 
     //기타 메소드
     void where(const cv::Mat& skel, std::vector<cv::Point> &result);
-    void visualize(int sampling_dis = 1);
+    bool write(std::string path = "result/vector_json/recent_result.json");
+    void visualize(int sampling_dis = 1,bool save = false);
 };
 
 #endif

@@ -21,12 +21,13 @@ struct Edge {
 //----------------------------------------------------------------------------------
 //---------------------------   vectorization   ------------------------------------
 //----------------------------------------------------------------------------------
-vbranch get_branch_vector(std::vector<cv::Point2d>& center_points, cv::Mat& mask, cv::Mat& fundus) {
-	//처음점 끝점 추가
+vbranch get_branch_vector(int id, std::vector<cv::Point2d>& center_points, cv::Mat& mask, cv::Mat& fundus) {
+	//처음점 끝점 추가 및 번호 부여
 	vbranch result;
 	result.set_end_points(center_points[0], center_points.back());
+	result.set_ID(id);
 
-	//예외처리
+	//예외처리 <- 이부분을 바꿔야 고소정 선생님이 말 하신 부분 반영 가능
 	if (center_points.size() < 3)
 		return result;
 

@@ -22,6 +22,15 @@ vector<vnode*>& vnode::get_tail() {
 	return tail;
 }
 
+int vnode::get_ID() {
+	return ID_num;
+}
+
+void vnode::set_ID(int num) {
+	ID_num = num;
+}
+
+
 /*method*/
 void vnode::change_head_tail() {
 	swap(head, tail);

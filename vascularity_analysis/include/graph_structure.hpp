@@ -10,12 +10,16 @@
 
 class vnode {
 protected:
+	int ID_num;
 	std::vector<vnode*> head, tail;
 
 public:
 	//getter
+	int get_ID();
 	std::vector<vnode*>& get_head();
 	std::vector<vnode*>& get_tail();
+
+	void set_ID(int num);
 
 	//method
 	void change_head_tail();		//트리 구조에서 노드의 방향성을 바꾸는 함수 head쪽이 optical_disk와 가까운 쪽
