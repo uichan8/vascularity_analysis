@@ -28,7 +28,7 @@ vbranch get_branch_vector(int id, std::vector<cv::Point2d>& center_points, cv::M
 	result.set_ID(id);
 
 	//예외처리 <- 이부분을 바꿔야 고소정 선생님이 말 하신 부분 반영 가능
-	if (center_points.size() < 3)
+	if (center_points.size() < 2)
 		return result;
 
 	if (fundus.channels() != 1)
@@ -43,10 +43,11 @@ vbranch get_branch_vector(int id, std::vector<cv::Point2d>& center_points, cv::M
 	vector<double> edge_y2 = edge.edge_y2;
 
 	//sampling
-	edge_x = simple_sampling(edge_x, 3);
-	edge_y = simple_sampling(edge_y, 3);
-	edge_x2 = simple_sampling(edge_x2, 3);
-	edge_y2 = simple_sampling(edge_y2, 3);
+	int sampling_dense = 4;
+	edge_x = simple_sampling(edge_x, sampling_dense);
+	edge_y = simple_sampling(edge_y, sampling_dense);
+	edge_x2 = simple_sampling(edge_x2, sampling_dense);
+	edge_y2 = simple_sampling(edge_y2, sampling_dense);
 
 	vector<double> x_cen(edge_x.size());
 	vector<double> y_cen(edge_x.size());
@@ -450,11 +451,6 @@ double substitute(vector<double> coefficients, double x) {
 
 void fit(vector<double> x, vector<double> y, vector<vector<double>>& poly_x, vector<vector<double>>& poly_y, double k) {
 
-
-	if (x.size() < 5) {
-		return;
-	}
-
 	vector<double> xi = { x[0] };
 	xi.insert(xi.end(), x.begin(), x.end());
 	xi.push_back(x.back());
@@ -513,6 +509,7 @@ vector<double> simple_sampling(vector<double>& arr, int sparsity) {
 			sample_arr.push_back(arr[i]);
 		}
 	}
+	sample_arr.push_back(arr[arr.size()-1]);
 	return sample_arr;
 }
 
