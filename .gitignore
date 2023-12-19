@@ -41,3 +41,13 @@ x64/
 
 #main
 #main.cpp
+
+*.DS_Store
+__pycache__/
+*.pcy
+
+.vs/
+*.sln
+*.vcxproj
+*.filters
+*.user
