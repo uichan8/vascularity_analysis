@@ -13,8 +13,8 @@ from sort_points import sort_points
 from hermite_spline import fit, get_lines, differentiate
 from sampling import simple_sampling, delete_outliers
 
-img_path = "../SERVAL_N/data/img/000_img.png"
-mask_path = "../SERVAL_N/data/mask/000_mask.png"
+img_path = "../data/img/000_img.png"
+mask_path = "../data/mask/000_mask.png"
 
 #이미지 로드
 mask = Image.open(mask_path)
@@ -155,10 +155,10 @@ for vessel in vessel_informs:
                 subcen_y = np.append(subcen_y, (a[1]+b[1])/2)
                 r = np.append(r, np.sqrt((a[1] - b[1])**2+(a[0]-b[0])**2)/2)
 
-        sampling_num = 1
+        sampling_num = 5
 
 
-        sub_spline = fit(subcen_x,subcen_y,1.5)
+        sub_spline = fit(subcen_x,subcen_y,10000)
         spline_x = get_lines(sub_spline[0],sampling_num)#.clip(0,mask.shape[1]-1)
         spline_y = get_lines(sub_spline[1],sampling_num)#.clip(0,mask.shape[0]-1)
         spline_diff_x = differentiate(sub_spline[0])
