@@ -5,10 +5,8 @@ import math
 
 from mahotas.morph import hitmiss as hit_or_miss
 
-
 # find center point from skeleton------------------------
-
-class branch_point:
+class bifur_point:
     def __init__(self):
         self.X = self.X_list()
         self.T = self.T_list()
@@ -129,8 +127,10 @@ class end_point:
 
         return [endpoint1,endpoint2,endpoint3,endpoint4,endpoint5,endpoint6,endpoint7,endpoint8]
 
-B_POINT = branch_point()
-def find_branch_points(skel):
+B_POINT = bifur_point()
+E_POINT = end_point()
+
+def find_bifur_points(skel):
     bp = np.zeros(skel.shape, dtype=int)
     for x in B_POINT.X:
         bp = bp + hit_or_miss(skel,x)
@@ -140,7 +140,6 @@ def find_branch_points(skel):
         bp = bp + hit_or_miss(skel,t)
     return bp
 
-END_POINT = end_point()
 def find_end_points(skel):
     ep = 0
     for e in END_POINT.END:
@@ -152,7 +151,7 @@ def find_end_points(skel):
 #find center mask----------------------------------------
 
 class circle:
-    def __init__(self,max_r):
+    def __init__(self,max_r = 5):
         self._circle_edge_list = []
         self._circle_mask_list = []
 
@@ -218,7 +217,9 @@ class circle:
     def circle_mask_list(self):
         return self._circle_mask_list
     
-def get_pixel_values(mask, coordinates):
+C = circle()
+
+def get_pixel_values(mask, coordinates): 
     pixel_values = []
     for x, y in coordinates:
         if 0 <= x < mask.shape[1] and 0 <= y < mask.shape[0]:
@@ -228,19 +229,18 @@ def get_pixel_values(mask, coordinates):
     pixel_values.append(pixel_values[0])
     return np.array(pixel_values)
 
-MAX_R = 5
-C = circle(MAX_R)  
-def find_branch_mask(mask,x,y):
+def find_bifur_mask(mask,x,y,max_r = 5):
     dilated_mask = cv2.dilate(mask, np.ones((3,3), dtype=np.uint8), iterations=1)
     i = 0
     for circle_edge in C.circle_edge_list:
         r = 2 * i + 1
         coor = circle_edge + np.array([x,y])
         l = get_pixel_values(mask, coor)
-        if (l[1:] != l[:-1]).sum() > 5 or r == MAX_R:
+        if (l[1:] != l[:-1]).sum() > 5 or r == max_r:
             break
         i += 1
         
+    bifur_mask = mask[y-r:y+r+1,x-r:x+r+1] * C.circle_mask_list[i]
+    return np.array(bifur_mask,dtype=np.uint8)
     
-    branch_mask = mask[y-r:y+r+1,x-r:x+r+1] * C.circle_mask_list[i]
-    return np.array(branch_mask,dtype=np.uint8)
+#--------------------------------------------------------
